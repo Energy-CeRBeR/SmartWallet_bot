@@ -14,7 +14,7 @@ from src.transactions.handlers import router as transactions_router
 async def main():
     await async_main()
     config: Config = load_config(".env")
-    bot = Bot(token=config.tg_bot.token, parse_mode=ParseMode.MARKDOWN_V2)
+    bot = Bot(token=config.tg_bot.token)
     dp = Dispatcher()
 
     dp.include_routers(

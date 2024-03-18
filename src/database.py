@@ -22,8 +22,8 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     tg_id: Mapped[int] = mapped_column(nullable=False)
-    username: Mapped[str] = mapped_column()
-    email: Mapped[str] = mapped_column()
+    first_name: Mapped[str] = mapped_column()
+    email: Mapped[str] = mapped_column(nullable=True)
 
     cards = relationship("Card")
     in_categories = relationship("IncomeCategory")
@@ -93,5 +93,4 @@ class Expense(Base):
 
 async def async_main():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
