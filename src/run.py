@@ -1,15 +1,27 @@
 import asyncio
 
 from aiogram import Dispatcher, Bot
+from aiogram.enums import ParseMode
+
 from config_data.config import Config, load_config
 from src.database import async_main
+
+from src.user.handlers import router as user_router
+from src.card_operations.handlers import router as card_router
+from src.transactions.handlers import router as transactions_router
 
 
 async def main():
     await async_main()
     config: Config = load_config(".env")
-    bot = Bot(token=config.tg_bot.token, parse_mode="HTML")
+    bot = Bot(token=config.tg_bot.token, parse_mode=ParseMode.MARKDOWN_V2)
     dp = Dispatcher()
+
+    dp.include_routers(
+        user_router,
+        card_router,
+        transactions_router
+    )
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
