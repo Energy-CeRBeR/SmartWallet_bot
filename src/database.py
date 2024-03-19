@@ -1,4 +1,5 @@
 import datetime
+import enum
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
@@ -35,7 +36,7 @@ class IncomeCategory(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    tg_id: Mapped[int] = mapped_column(ForeignKey("users.tg_id"))
 
     incomes = relationship("Income")
 
@@ -45,18 +46,14 @@ class ExpenseCategory(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    tg_id: Mapped[int] = mapped_column(ForeignKey("users.tg_id"))
 
     expenses = relationship("Expense")
 
 
-class CardType(Base):
-    __tablename__ = "card_types"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(nullable=False)
-
-    cards = relationship("Card")
+class CardType(enum.Enum):
+    debit_card = "debit_card"
+    credit_card = "credit_card"
 
 
 class Card(Base):
@@ -64,8 +61,8 @@ class Card(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(nullable=False)
-    type_id: Mapped[int] = mapped_column(ForeignKey("card_types.id"))
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    card_type: Mapped[CardType] = mapped_column()
+    tg_id: Mapped[int] = mapped_column(ForeignKey("users.tg_id"))
     balance: Mapped[float] = mapped_column(nullable=False)
 
 
