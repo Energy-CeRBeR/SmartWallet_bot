@@ -4,7 +4,7 @@ from aiogram import Dispatcher, Bot
 from aiogram.enums import ParseMode
 
 from config_data.config import Config, load_config
-from src.database import async_main
+from src.database.database import async_main
 
 from src.user.handlers import router as user_router
 from src.card_operations.handlers import router as card_router

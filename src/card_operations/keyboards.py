@@ -2,6 +2,16 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from src.card_operations.lexicon import LEXICON
 
 
+def create_exit_keyboard():
+    back_button = InlineKeyboardButton(
+        text=LEXICON["card_types"]["back"],
+        callback_data="cancel"
+    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+
+    return keyboard
+
+
 class TypeKeyboard:
     @staticmethod
     def create_keyboard():
@@ -19,10 +29,9 @@ class TypeKeyboard:
         )
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
-                [debit_card_button,
-                 credit_card_button,
-                 back_button
-                 ]
+                [debit_card_button],
+                [credit_card_button],
+                [back_button]
             ]
         )
 

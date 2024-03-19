@@ -1,16 +1,17 @@
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import Command, CommandObject
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 
 from sqlalchemy import select, insert, delete, update
 
-from src.database import async_session
-from src.database import Card, CardType
+from src.database.database import async_session
+from src.database.database import Card
+from src.database.users_status import users_status
 
 from src.card_operations.lexicon import LEXICON as USER_LEXICON
 from src.card_operations.lexicon import LEXICON_COMMANDS as USER_LEXICON_COMMANDS
 
-from src.card_operations.keyboards import TypeKeyboard
+from src.card_operations.keyboards import TypeKeyboard, create_exit_keyboard
 
 router = Router()
 
@@ -29,13 +30,46 @@ async def get_card(message: Message):
 
 
 @router.message(Command(commands="add_card"))
-async def add_card(message: Message):
+async def create_type(message: Message):
     await message.answer(
         text=USER_LEXICON_COMMANDS[message.text],
         reply_markup=TypeKeyboard.create_keyboard()
     )
 
 
+@router.callback_query(F.data == "cancel")
+async def back_to_menu(callback: CallbackQuery):
+    await callback.message.delete()
+    await callback.message.answer(USER_LEXICON["cancel_operation"])
 
 
+@router.callback_query(F.data == "credit_card")
+async def temp_function_for_credit_card(callback: CallbackQuery):
+    await callback.message.answer("Данный тип карт в разработке!")
 
+
+@router.callback_query(F.data == "debit_card")
+async def create_name(callback: CallbackQuery):
+    await callback.message.edit_text(
+        text=USER_LEXICON["card_name"]["name"],
+        reply_markup=create_exit_keyboard()
+    )
+    users_status[callback.from_user.id]["card"]["card_type"] = "debit_card"
+    users_status[callback.from_user.id]["card"]["create_name"] = True
+
+
+@router.message(Command(commands="card_name"))
+async def set_card_name(message: Message, command: CommandObject):
+    if not users_status[message.from_user.id]["card"]["create_name"]:
+        await message.answer(USER_LEXICON["access_error"])
+        return
+
+    if command.args is None:
+        await message.answer(USER_LEXICON["card_name"]["empty_name"])
+        return
+
+    users_status[message.from_user.id]["card"]["card_name"] = command.args
+    await message.answer(
+        text=...,
+        reply_markup=...
+    )
