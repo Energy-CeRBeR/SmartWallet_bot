@@ -10,8 +10,6 @@ from src.database.database import async_session
 from src.database.database import Card
 from src.database.users_status import users_status, user_dict_template
 
-from src.services.services import isValidBalance
-
 from src.card_operations.lexicon import LEXICON as USER_LEXICON
 from src.card_operations.lexicon import LEXICON_COMMANDS as USER_LEXICON_COMMANDS
 
@@ -21,7 +19,7 @@ router = Router()
 
 
 @router.message(Command(commands="cards"))
-async def get_card(message: Message):
+async def get_cards(message: Message):
     async with async_session() as session:
         query = select(Card).where(Card.tg_id == message.from_user.id)
         result = await session.execute(query)
@@ -42,7 +40,7 @@ async def create_type(message: Message):
 
 
 @router.callback_query(F.data == "cancel")
-async def back_to_menu(callback: CallbackQuery):
+async def cancel_operation(callback: CallbackQuery):
     users_status[callback.from_user.id] = deepcopy(user_dict_template)
 
     await callback.message.delete()
@@ -103,21 +101,23 @@ async def set_card_balance(message: Message, command: CommandObject):
         await message.answer(USER_LEXICON["card_balance"]["empty_balance"])
         return
 
-    if not isValidBalance(command.args.split()):
-        await message.answer(USER_LEXICON["card_balance"]["incorrect_balance"])
-        return
+    try:
+        balance = float(command.args.strip())
+        users_status[message.from_user.id]["card"]["card_balance"] = balance
 
-    users_status[message.from_user.id]["card"]["card_balance"] = command.args
+        async with async_session() as session:
+            stmt = insert(Card).values(
+                name=users_status[message.from_user.id]["card"]["card_name"],
+                card_type=users_status[message.from_user.id]["card"]["card_type"],
+                tg_id=message.from_user.id,
+                balance=balance
+            )
 
-    async with async_session() as session:
-        stmt = insert(Card).values(
-            name=users_status[message.from_user.id]["card"]["card_name"],
-            card_type=users_status[message.from_user.id]["card"]["card_type"],
-            tg_id=message.from_user.id,
-            balance=float()
-            # Переделать проверка типа через try - except, добавить баланс, закоммитить изменения
-        )
+        users_status[message.from_user.id] = deepcopy(user_dict_template)
+        await session.execute(stmt)
+        await session.commit()
+        await message.answer(text=USER_LEXICON["card_is_create"])
 
-    users_status[message.from_user.id] = deepcopy(user_dict_template)
-
-    await message.answer(text=USER_LEXICON["card_is_create"])
+    except ValueError:
+        await session.execute(stmt)
+        await session.commit()
