@@ -7,11 +7,12 @@ from aiogram.types import Message, CallbackQuery
 from sqlalchemy import select, insert, delete, update
 
 from src.database.database import async_session
-from src.database.database import Card
+from src.database.database import Card, CardType
 from src.database.users_status import users_status, user_dict_template
 
 from src.card_operations.lexicon import LEXICON as USER_LEXICON
 from src.card_operations.lexicon import LEXICON_COMMANDS as USER_LEXICON_COMMANDS
+from src.card_operations.lexicon import card_list
 
 from src.card_operations.keyboards import TypeKeyboard, create_exit_keyboard
 
@@ -23,10 +24,14 @@ async def get_cards(message: Message):
     async with async_session() as session:
         query = select(Card).where(Card.tg_id == message.from_user.id)
         result = await session.execute(query)
-        cards = result.mappings().all()
+        cards = result.scalars().all()
         if cards:
-            print(cards)
-            await message.answer(USER_LEXICON_COMMANDS[message.text]["card_list"])
+            text = ""
+            for card in cards:
+                text = card_list(text, card)
+
+            await message.answer(f'{USER_LEXICON_COMMANDS[message.text]["card_list"]}\n'
+                                 f'{text}')
         else:
             await message.answer(USER_LEXICON_COMMANDS[message.text]["no_cards"])
 
@@ -108,7 +113,7 @@ async def set_card_balance(message: Message, command: CommandObject):
         async with async_session() as session:
             stmt = insert(Card).values(
                 name=users_status[message.from_user.id]["card"]["card_name"],
-                card_type=users_status[message.from_user.id]["card"]["card_type"],
+                card_type=CardType.debit_card,
                 tg_id=message.from_user.id,
                 balance=balance
             )

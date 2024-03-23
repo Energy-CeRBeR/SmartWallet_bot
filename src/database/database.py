@@ -15,7 +15,16 @@ async_session = async_sessionmaker(engine)
 
 
 class Base(AsyncAttrs, DeclarativeBase):
-    pass
+    repr_cols_num = 3
+    repr_cols = tuple()
+
+    '''def get_values(self):
+        cols = []
+        for idx, col in enumerate(self.__table__.columns.keys()):
+            if col in self.repr_cols or idx < self.repr_cols_num:
+                cols.append(f"{getattr(self, col)}")
+
+        return cols'''
 
 
 class User(Base):
@@ -52,8 +61,8 @@ class ExpenseCategory(Base):
 
 
 class CardType(enum.Enum):
-    debit_card = "debit_card"
-    credit_card = "credit_card"
+    debit_card = "Дебетовая"
+    credit_card = "Кредитная"
 
 
 class Card(Base):
@@ -61,7 +70,7 @@ class Card(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(nullable=False)
-    card_type: Mapped[CardType] = mapped_column()
+    card_type: Mapped[CardType]
     tg_id: Mapped[int] = mapped_column(ForeignKey("users.tg_id"))
     balance: Mapped[float] = mapped_column(nullable=False)
 
