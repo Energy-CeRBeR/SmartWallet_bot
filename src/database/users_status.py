@@ -5,6 +5,11 @@ user_dict_template: dict = {
         "card_name": "",
         "create_balance": False,
         "balance": 0
+    },
+    "upd_card": {
+        "card_id": 0,
+        "create_name": False,
+        "create_balance": False,
     }
 }
 
