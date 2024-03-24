@@ -161,8 +161,7 @@ async def set_card_balance(message: Message, command: CommandObject):
         await message.answer(text=USER_LEXICON["card_is_create"])
 
     except ValueError:
-        await session.execute(stmt)
-        await session.commit()
+        await message.answer(USER_LEXICON["card_balance"]["incorrect_balance"])
 
 
 @router.callback_query(F.data[:8] == "del_card")
@@ -201,7 +200,7 @@ async def upd_card_name(callback: CallbackQuery):
 
 
 @router.message(Command(commands="upd_card_name"))
-async def set_card_name(message: Message, command: CommandObject):
+async def set_upd_card_name(message: Message, command: CommandObject):
     if message.from_user.id not in users_status:
         users_status[message.from_user.id] = deepcopy(user_dict_template)
 
@@ -220,6 +219,53 @@ async def set_card_name(message: Message, command: CommandObject):
         await session.commit()
 
     users_status[message.from_user.id]["card"]["create_name"] = False
+    users_status[message.from_user.id]["upd_card"]["card_id"] = 0
 
     await message.delete()
     await message.answer(USER_LEXICON["update_card_name"]["successful_upd"])
+
+
+@router.callback_query(F.data[:8] == "upd_bala")
+async def upd_card_balance(callback: CallbackQuery):
+    card_id = int(callback.data[8:])
+    if callback.from_user.id not in users_status:
+        users_status[callback.from_user.id] = deepcopy(user_dict_template)
+    users_status[callback.from_user.id]["upd_card"]["create_balance"] = True
+    users_status[callback.from_user.id]["upd_card"]["card_id"] = card_id
+
+    await callback.message.edit_text(
+        text=USER_LEXICON["update_card_balance"]["balance"],
+        reply_markup=create_exit_show_card_keyboard("exit_update")
+    )
+
+
+@router.message(Command(commands="upd_card_balance"))
+async def set_upd_card_balance(message: Message, command: CommandObject):
+    if message.from_user.id not in users_status:
+        users_status[message.from_user.id] = deepcopy(user_dict_template)
+
+    if not users_status[message.from_user.id]["upd_card"]["create_balance"]:
+        await message.answer(USER_LEXICON["access_error"])
+        return
+
+    if command.args is None:
+        await message.answer(USER_LEXICON["upd_card_balance"]["empty_balance"])
+        return
+
+    try:
+        balance = float(command.args.strip())
+
+        async with async_session() as session:
+            card_id = users_status[message.from_user.id]["upd_card"]["card_id"]
+            stmt = update(Card).where(Card.id == card_id).values(balance=balance)
+            await session.execute(stmt)
+            await session.commit()
+
+        users_status[message.from_user.id]["card"]["create_balance"] = False
+        users_status[message.from_user.id]["upd_card"]["card_id"] = 0
+
+        await message.delete()
+        await message.answer(USER_LEXICON["update_card_balance"]["successful_upd"])
+
+    except ValueError:
+        await message.answer(USER_LEXICON["update_card_balance"]["incorrect_balance"])
