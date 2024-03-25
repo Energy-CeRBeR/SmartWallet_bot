@@ -10,6 +10,10 @@ user_dict_template: dict = {
         "card_id": 0,
         "create_name": False,
         "create_balance": False,
+    },
+    "upd_category": {
+        "category_id": 0,
+        "category_type": None
     }
 }
 

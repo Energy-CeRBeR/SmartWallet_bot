@@ -57,22 +57,6 @@ async def show_card(callback: CallbackQuery):
         )
 
 
-'''@router.message(Command(commands="cards"))
-async def get_cards(message: Message):
-    async with async_session() as session:
-        query = select(Card).where(Card.tg_id == message.from_user.id)
-        result = await session.execute(query)
-        cards = result.scalars().all()
-        if cards:
-            text = ""
-            for card in cards:
-                text = card_list(text, card)
-
-            await message.answer(f'{USER_LEXICON_COMMANDS[message.text]["card_list"]}{text}')
-        else:
-            await message.answer(USER_LEXICON_COMMANDS[message.text]["no_cards"])'''
-
-
 @router.message(Command(commands="add_card"))
 async def create_type(message: Message):
     await message.answer(
@@ -221,7 +205,6 @@ async def set_upd_card_name(message: Message, command: CommandObject):
     users_status[message.from_user.id]["card"]["create_name"] = False
     users_status[message.from_user.id]["upd_card"]["card_id"] = 0
 
-    await message.delete()
     await message.answer(USER_LEXICON["update_card_name"]["successful_upd"])
 
 

@@ -45,7 +45,7 @@ def create_expense_categories_keyboard(categories: list[ExpenseCategory]) -> Inl
 def create_category_actions_keyboard(category_id: int, category_type: str):
     update_button = InlineKeyboardButton(
         text=LEXICON["category_name_update"],
-        callback_data=f"upd_category_name{category_type}{category_id}"
+        callback_data=f"upd_category{category_type}{category_id}"
     )
     delete_button = InlineKeyboardButton(
         text=LEXICON["category_delete"],
@@ -64,4 +64,3 @@ def create_category_actions_keyboard(category_id: int, category_type: str):
     )
 
     return keyboard
-
