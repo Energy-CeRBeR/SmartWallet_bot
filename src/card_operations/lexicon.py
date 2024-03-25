@@ -36,7 +36,7 @@ LEXICON: dict = {
     },
     "card_balance": {
         "balance": "Введите баланс вашей карты командой\n"
-                   "/upd_card_balance <баланс карты>",
+                   "/card_balance <баланс карты>",
         "empty_balance": "Баланс не может быть пустым! Повторите попытку",
         "incorrect_balance": "Баланс должен иметь численный тип данных!"
     },

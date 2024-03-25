@@ -264,7 +264,6 @@ async def set_upd_card_balance(message: Message, command: CommandObject):
         users_status[message.from_user.id]["card"]["create_balance"] = False
         users_status[message.from_user.id]["upd_card"]["card_id"] = 0
 
-        await message.delete()
         await message.answer(USER_LEXICON["update_card_balance"]["successful_upd"])
 
     except ValueError:
