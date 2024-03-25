@@ -17,6 +17,9 @@ LEXICON: dict = {
         "no_categories": "Пока что у вас нет ни одной категории расходов!",
         "categories_list": "Ваши категории расходов:"
     },
+    "income_transactions": {
+        "no_categories": "Вам нужно добавить хотя бы одну категорию доходов для выполнения данной операции!"
+    },
     "back_show_categories": "Выйти из просмотра",
     "category_name_update": "Изменить название категории",
     "category_delete": "Удалить категорию",
@@ -24,9 +27,10 @@ LEXICON: dict = {
     "successful_upd_category_name": "Название категории успешно обновлено!",
     "update_category_name": "Введите название категории командой\n"
                             "/upd_category_name <Новое название категории>:",
-    "access_error": "Отказано в доступе!"
+    "access_error": "Отказано в доступе!",
+    "cancel_create": "Отменить создание!"
 }
 
 LEXICON_COMMANDS: dict = {
-
+    "/add_income": "Выберите категорию вашего дохода:"
 }
