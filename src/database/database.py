@@ -82,8 +82,8 @@ class Income(Base):
     category_id: Mapped[int] = mapped_column(ForeignKey("in_categories.id"))
     card_id: Mapped[int] = mapped_column(ForeignKey("cards.id"))
     amount: Mapped[float] = mapped_column(nullable=False)
-    description: Mapped[str] = mapped_column()
-    date: Mapped[datetime.date] = mapped_column(nullable=False)
+    description: Mapped[str] = mapped_column(nullable=True)
+    date: Mapped[datetime.date] = mapped_column(default=datetime.date.today())
 
 
 class Expense(Base):
@@ -93,8 +93,8 @@ class Expense(Base):
     category_id: Mapped[int] = mapped_column(ForeignKey("ex_categories.id"))
     card_id: Mapped[int] = mapped_column(ForeignKey("cards.id"))
     amount: Mapped[float] = mapped_column(nullable=False)
-    description: Mapped[str] = mapped_column()
-    date: Mapped[datetime.date] = mapped_column(nullable=False)
+    description: Mapped[str] = mapped_column(nullable=True)
+    date: Mapped[datetime.date] = mapped_column(default=datetime.date.today())
 
 
 async def async_main():

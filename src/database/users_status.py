@@ -14,6 +14,13 @@ user_dict_template: dict = {
     "upd_category": {
         "category_id": 0,
         "category_type": None
+    },
+    "transactions": {
+        "category_type": None,
+        "category_type_str": None,
+        "category_id": 0,
+        "card_id": 0,
+        "amount": 0
     }
 }
 
