@@ -38,6 +38,8 @@ class User(Base):
     cards = relationship("Card")
     in_categories = relationship("IncomeCategory")
     ex_categories = relationship("ExpenseCategory")
+    incomes = relationship("Income")
+    expenses = relationship("Expense")
 
 
 class IncomeCategory(Base):
@@ -79,6 +81,7 @@ class Income(Base):
     __tablename__ = "incomes"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    tg_id: Mapped[int] = mapped_column(ForeignKey("users.tg_id"))
     category_id: Mapped[int] = mapped_column(ForeignKey("in_categories.id"))
     card_id: Mapped[int] = mapped_column(ForeignKey("cards.id"))
     amount: Mapped[float] = mapped_column(nullable=False)
@@ -90,6 +93,7 @@ class Expense(Base):
     __tablename__ = "expenses"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    tg_id: Mapped[int] = mapped_column(ForeignKey("users.tg_id"))
     category_id: Mapped[int] = mapped_column(ForeignKey("ex_categories.id"))
     card_id: Mapped[int] = mapped_column(ForeignKey("cards.id"))
     amount: Mapped[float] = mapped_column(nullable=False)
@@ -99,4 +103,5 @@ class Expense(Base):
 
 async def async_main():
     async with engine.begin() as conn:
+        # await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)

@@ -24,6 +24,11 @@ from src.card_operations.keyboards import create_exit_keyboard
 
 router = Router()
 
+'''@router.message(Command(commands="incomes"))
+async def get_incomes(message: Message):
+    async with async_session() as session:
+        query = select(IncomeCategory).where(Income. == message.from_user.id)'''
+
 
 @router.message(Command(commands="add_income"))
 async def select_income_type(message: Message):
@@ -132,6 +137,7 @@ async def set_amount(message: Message, command: CommandObject):
         category_type = users_status[message.from_user.id]["transactions"]["category_type"]
         async with async_session() as session:
             stmt = insert(category_type).values(
+                tg_id=message.from_user.id,
                 category_id=users_status[message.from_user.id]["transactions"]["category_id"],
                 card_id=users_status[message.from_user.id]["transactions"]["card_id"],
                 amount=amount,
@@ -154,5 +160,3 @@ async def set_amount(message: Message, command: CommandObject):
             text=USER_LEXICON[transactions]["incorrect_amount"],
             reply_markup=create_exit_keyboard()
         )
-
-
