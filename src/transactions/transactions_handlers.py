@@ -137,8 +137,15 @@ async def set_amount(message: Message, command: CommandObject):
                 amount=amount,
                 description=""
             )
+
+            card_update = update(Card).where(
+                Card.id == users_status[message.from_user.id]["transactions"]["card_id"]
+            ).values(balance=Card.balance + amount if category_type_str == "income" else Card.balance - amount)
+
             users_status[message.from_user.id] = deepcopy(user_dict_template)
+
             await session.execute(stmt)
+            await session.execute(card_update)
             await session.commit()
             await message.answer(text=USER_LEXICON[transactions]["income_is_create"])
 
@@ -148,4 +155,4 @@ async def set_amount(message: Message, command: CommandObject):
             reply_markup=create_exit_keyboard()
         )
 
-# Добавить обновление баланса карты при добавлении расхода / дохода
+
