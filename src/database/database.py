@@ -18,14 +18,6 @@ class Base(AsyncAttrs, DeclarativeBase):
     repr_cols_num = 3
     repr_cols = tuple()
 
-    '''def get_values(self):
-        cols = []
-        for idx, col in enumerate(self.__table__.columns.keys()):
-            if col in self.repr_cols or idx < self.repr_cols_num:
-                cols.append(f"{getattr(self, col)}")
-
-        return cols'''
-
 
 class User(Base):
     __tablename__ = "users"
