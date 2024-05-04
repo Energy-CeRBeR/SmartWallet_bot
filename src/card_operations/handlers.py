@@ -209,6 +209,7 @@ async def set_upd_card_balance(message: Message, state: FSMContext):
             await session.commit()
 
         await message.answer(USER_LEXICON["update_card_balance"]["successful_upd"])
+        await state.clear()
 
     except ValueError:
         await message.answer(USER_LEXICON["update_card_balance"]["incorrect_balance"])

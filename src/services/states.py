@@ -22,3 +22,9 @@ class AddExpenseCategoryState(StatesGroup):
 
 class UpdCategoryState(StatesGroup):
     upd_name = State()
+
+
+class AddCategoryState(StatesGroup):
+    select_card = State()
+    add_amount = State()
+    set_data = State()

@@ -1,15 +1,14 @@
-from copy import deepcopy
-
 from aiogram import Router, F
-from aiogram.filters import Command, CommandObject
+from aiogram.filters import Command, StateFilter
 from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
 
 from sqlalchemy import select, insert, delete, update
 
 from src.database.database import async_session
 from src.database.models import IncomeCategory, ExpenseCategory, Card, Income, Expense
 
-from src.database.users_status import users_status, user_dict_template
+from src.services.states import AddCategoryState
 
 from src.transactions.lexicon import (
     LEXICON as USER_LEXICON,
@@ -24,18 +23,9 @@ from src.card_operations.keyboards import create_exit_keyboard
 
 router = Router()
 
-'''@router.message(Command(commands="incomes"))
-async def get_incomes(message: Message):
-    async with async_session() as session:
-        query = select(IncomeCategory).where(Income. == message.from_user.id)'''
-
 
 @router.message(Command(commands="add_income"))
-async def select_income_type(message: Message):
-    users_status[message.from_user.id] = deepcopy(user_dict_template)
-    users_status[message.from_user.id]["transactions"]["category_type"] = Income
-    users_status[message.from_user.id]["transactions"]["category_type_str"] = "income"
-
+async def select_income_type(message: Message, state: FSMContext):
     async with async_session() as session:
         query = select(IncomeCategory)
         result = await session.execute(query)
@@ -46,17 +36,18 @@ async def select_income_type(message: Message):
                 text=USER_LEXICON_COMMANDS[message.text],
                 reply_markup=create_select_category_keyboard(buttons)
             )
+            await state.set_state(AddCategoryState.select_card)
+            await state.update_data(
+                category_type=Income,
+                category_type_str="income"
+            )
 
         else:
             await message.answer(USER_LEXICON["income_transactions"]["no_categories"])
 
 
 @router.message(Command(commands="add_expense"))
-async def select_expense_type(message: Message):
-    users_status[message.from_user.id] = deepcopy(user_dict_template)
-    users_status[message.from_user.id]["transactions"]["category_type"] = Expense
-    users_status[message.from_user.id]["transactions"]["category_type_str"] = "expense"
-
+async def select_expense_type(message: Message, state: FSMContext):
     async with async_session() as session:
         query = select(ExpenseCategory)
         result = await session.execute(query)
@@ -68,17 +59,20 @@ async def select_expense_type(message: Message):
                 reply_markup=create_select_category_keyboard(buttons)
             )
 
+            await state.set_state(AddCategoryState.select_card)
+            await state.update_data(
+                category_type=Expense,
+                category_type_str="expense"
+            )
+
         else:
             await message.answer(USER_LEXICON["expense_transactions"]["no_categories"])
 
 
-@router.callback_query(F.data[:11] == "select_card")
-async def select_card(callback: CallbackQuery):
-    if callback.from_user.id not in users_status:
-        users_status[callback.from_user.id] = deepcopy(user_dict_template)
-
+@router.callback_query(F.data[:11] == "select_card", StateFilter(AddCategoryState.select_card))
+async def select_card(callback: CallbackQuery, state: FSMContext):
     category_id = int(callback.data[11:])
-    users_status[callback.from_user.id]["transactions"]["category_id"] = category_id
+    await state.update_data(category_id=category_id)
 
     async with async_session() as session:
         query = select(Card)
@@ -90,69 +84,58 @@ async def select_card(callback: CallbackQuery):
                 text=USER_LEXICON["card_list"],
                 reply_markup=create_select_card_keyboard(buttons)
             )
+            await state.set_state(AddCategoryState.add_amount)
 
         else:
-            category_type = users_status[callback.from_user.id]["transactions"]["category_type_str"]
-            transactions = "income_transactions" if category_type == "income" else "expense_transactions"
-            await callback.message.answer(USER_LEXICON[transactions]["no_cards"])
+            await callback.message.answer(USER_LEXICON["no_cards"])
+            await state.clear()
 
 
-@router.callback_query(F.data[:10] == "add_amount")
-async def add_amount(callback: CallbackQuery):
-    if callback.from_user.id not in users_status:
-        users_status[callback.from_user.id] = deepcopy(user_dict_template)
-
+@router.callback_query(F.data[:10] == "add_amount", StateFilter(AddCategoryState.add_amount))
+async def add_amount(callback: CallbackQuery, state: FSMContext):
     card_id = int(callback.data[10:])
-    users_status[callback.from_user.id]["transactions"]["card_id"] = card_id
+    await state.update_data(card_id=card_id)
 
     await callback.message.delete()
 
-    category_type = users_status[callback.from_user.id]["transactions"]["category_type_str"]
-    transactions = "income_transactions" if category_type == "income" else "expense_transactions"
+    data = await state.get_data()
+    category_type_str = data["category_type_str"]
+    transactions = "income_transactions" if category_type_str == "income" else "expense_transactions"
     await callback.message.answer(
         text=USER_LEXICON[transactions]["amount"],
         reply_markup=create_exit_keyboard()
     )
 
+    await state.set_state(AddCategoryState.set_data)
 
-@router.message(Command(commands="add_amount"))
-async def set_amount(message: Message, command: CommandObject):
-    if message.from_user.id not in users_status:
-        users_status[message.from_user.id] = deepcopy(user_dict_template)
 
-    if not users_status[message.from_user.id]["transactions"]["category_type"]:
-        await message.answer(USER_LEXICON["access_error"])
-        return
-
-    category_type_str = users_status[message.from_user.id]["transactions"]["category_type_str"]
+@router.message(StateFilter(AddCategoryState.set_data))
+async def set_amount(message: Message, state: FSMContext):
+    data = await state.get_data()
+    category_type_str = data["category_type_str"]
     transactions = "income_transactions" if category_type_str == "income" else "expense_transactions"
 
-    if command.args is None:
-        await message.answer(USER_LEXICON[transactions]["empty_amount"])
-        return
-
     try:
-        amount = float(command.args.strip())
-        users_status[message.from_user.id]["transactions"]["amount"] = amount
-        category_type = users_status[message.from_user.id]["transactions"]["category_type"]
+        amount = float(message.text.strip())
+        category_type = data["category_type"]
         async with async_session() as session:
             stmt = insert(category_type).values(
                 tg_id=message.from_user.id,
-                category_id=users_status[message.from_user.id]["transactions"]["category_id"],
-                card_id=users_status[message.from_user.id]["transactions"]["card_id"],
+                category_id=data["category_id"],
+                card_id=data["card_id"],
                 amount=amount,
                 description=""
             )
 
             card_update = update(Card).where(
-                Card.id == users_status[message.from_user.id]["transactions"]["card_id"]
-            ).values(balance=Card.balance + amount if category_type_str == "income" else Card.balance - amount)
-
-            users_status[message.from_user.id] = deepcopy(user_dict_template)
+                Card.id == data["card_id"]).values(
+                balance=Card.balance + amount if category_type_str == "income" else Card.balance - amount
+            )
 
             await session.execute(stmt)
             await session.execute(card_update)
             await session.commit()
+            await state.clear()
             await message.answer(text=USER_LEXICON[transactions]["income_is_create"])
 
     except ValueError:
