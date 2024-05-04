@@ -1,14 +1,16 @@
 from copy import deepcopy
 
 from aiogram import Router, F
-from aiogram.filters import Command, CommandObject
+from aiogram.filters import Command, CommandObject, StateFilter
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from sqlalchemy import select, insert, delete, update
 
 from src.database.database import async_session
-from src.database.models import CardType, Card
-from src.database.users_status import users_status, user_dict_template
+from src.database.models import Card
+
+from src.services.states import AddCardState, UpdCardState
 
 from src.card_operations.lexicon import (
     LEXICON as USER_LEXICON,
@@ -59,90 +61,78 @@ async def show_card(callback: CallbackQuery):
 
 
 @router.message(Command(commands="add_card"))
-async def create_type(message: Message):
+async def create_type(message: Message, state: FSMContext):
     await message.answer(
         text=USER_LEXICON_COMMANDS[message.text],
         reply_markup=TypeKeyboard.create_keyboard()
     )
 
+    await state.set_state(AddCardState.add_type)
+
 
 @router.callback_query(F.data[:6] == "cancel")
-async def cancel_operation(callback: CallbackQuery):
-    users_status[callback.from_user.id] = deepcopy(user_dict_template)
+async def cancel_operation(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+
     await callback.message.delete()
     if len(USER_LEXICON[callback.data]) > 0:
         await callback.message.answer(USER_LEXICON[callback.data])
 
 
-@router.callback_query(F.data == "credit_card")
-async def temp_function_for_credit_card(callback: CallbackQuery):
+@router.callback_query(F.data == "credit_card", StateFilter(AddCardState.add_type))
+async def temp_function_for_credit_card(callback: CallbackQuery, state: FSMContext):
+    await callback.message.delete()
     await callback.message.answer("Данный тип карт в разработке!")
 
 
-@router.callback_query(F.data == "debit_card")
-async def create_name(callback: CallbackQuery):
+@router.callback_query(F.data == "debit_card", StateFilter(AddCardState.add_type))
+async def create_name(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(card_type="debit_card")
+
     await callback.message.edit_text(
         text=USER_LEXICON["card_name"]["name"],
         reply_markup=create_exit_keyboard()
     )
-    if callback.from_user.id not in users_status:
-        users_status[callback.from_user.id] = deepcopy(user_dict_template)
 
-    users_status[callback.from_user.id]["card"]["card_type"] = "debit_card"
-    users_status[callback.from_user.id]["card"]["create_name"] = True
+    await state.set_state(AddCardState.add_name)
 
 
-@router.message(Command(commands="card_name"))
-async def set_card_name(message: Message, command: CommandObject):
-    if message.from_user.id not in users_status:
-        users_status[message.from_user.id] = deepcopy(user_dict_template)
+@router.callback_query(StateFilter(AddCardState.add_type))
+async def error_card_type(message: Message):
+    await message.answer(USER_LEXICON["card_types"]["incorrect_action"])
 
-    if not users_status[message.from_user.id]["card"]["create_name"]:
-        await message.answer(USER_LEXICON["access_error"])
-        return
 
-    if command.args is None:
-        await message.answer(USER_LEXICON["card_name"]["empty_name"])
-        return
-
-    users_status[message.from_user.id]["card"]["card_name"] = command.args
-    users_status[message.from_user.id]["card"]["create_name"] = False
-    users_status[message.from_user.id]["card"]["create_balance"] = True
+@router.message(StateFilter(AddCardState.add_name))
+async def set_card_name(message: Message, state: FSMContext):
+    await state.update_data(card_name=message.text.strip())
 
     await message.answer(
         text=USER_LEXICON["card_balance"]["balance"],
         reply_markup=create_exit_keyboard()
     )
 
+    await state.set_state(AddCardState.add_balance)
 
-@router.message(Command(commands="card_balance"))
-async def set_card_balance(message: Message, command: CommandObject):
-    if message.from_user.id not in users_status:
-        users_status[message.from_user.id] = deepcopy(user_dict_template)
 
-    if not users_status[message.from_user.id]["card"]["create_balance"]:
-        await message.answer(USER_LEXICON["access_error"])
-        return
-
-    if command.args is None:
-        await message.answer(USER_LEXICON["card_balance"]["empty_balance"])
-        return
-
+@router.message(StateFilter(AddCardState.add_balance))
+async def set_card_balance(message: Message, state: FSMContext):
     try:
-        balance = float(command.args.strip())
-        users_status[message.from_user.id]["card"]["card_balance"] = balance
+        balance = float(message.text.strip())
+        await state.update_data(card_balance=balance)
+
+        data = await state.get_data()
 
         async with async_session() as session:
             stmt = insert(Card).values(
-                name=users_status[message.from_user.id]["card"]["card_name"],
-                card_type=CardType.debit_card,
+                name=data["card_name"],
+                card_type=data["card_type"],
                 tg_id=message.from_user.id,
-                balance=balance
+                balance=data["card_balance"]
             )
 
-        users_status[message.from_user.id] = deepcopy(user_dict_template)
         await session.execute(stmt)
         await session.commit()
+        await state.clear()
         await message.answer(text=USER_LEXICON["card_is_create"])
 
     except ValueError:
@@ -171,12 +161,11 @@ async def upd_card(callback: CallbackQuery):
 
 
 @router.callback_query(F.data[:8] == "upd_name")
-async def upd_card_name(callback: CallbackQuery):
+async def upd_card_name(callback: CallbackQuery, state: FSMContext):
     card_id = int(callback.data[8:])
-    if callback.from_user.id not in users_status:
-        users_status[callback.from_user.id] = deepcopy(user_dict_template)
-    users_status[callback.from_user.id]["upd_card"]["create_name"] = True
-    users_status[callback.from_user.id]["upd_card"]["card_id"] = card_id
+
+    await state.update_data(card_id=card_id)
+    await state.set_state(UpdCardState.upd_name)
 
     await callback.message.edit_text(
         text=USER_LEXICON["update_card_name"]["name"],
@@ -184,38 +173,25 @@ async def upd_card_name(callback: CallbackQuery):
     )
 
 
-@router.message(Command(commands="upd_card_name"))
-async def set_upd_card_name(message: Message, command: CommandObject):
-    if message.from_user.id not in users_status:
-        users_status[message.from_user.id] = deepcopy(user_dict_template)
-
-    if not users_status[message.from_user.id]["upd_card"]["create_name"]:
-        await message.answer(USER_LEXICON["access_error"])
-        return
-
-    if command.args is None:
-        await message.answer(USER_LEXICON["update_card_name"]["empty_name"])
-        return
-
+@router.message(StateFilter(UpdCardState.upd_name))
+async def set_upd_card_name(message: Message, state: FSMContext):
+    data = await state.get_data()
     async with async_session() as session:
-        card_id = users_status[message.from_user.id]["upd_card"]["card_id"]
-        stmt = update(Card).where(Card.id == card_id).values(name=command.args)
+        card_id = data["card_id"]
+        stmt = update(Card).where(Card.id == card_id).values(name=message.text)
         await session.execute(stmt)
         await session.commit()
 
-    users_status[message.from_user.id]["card"]["create_name"] = False
-    users_status[message.from_user.id]["upd_card"]["card_id"] = 0
-
+    await state.clear()
     await message.answer(USER_LEXICON["update_card_name"]["successful_upd"])
 
 
 @router.callback_query(F.data[:8] == "upd_bala")
-async def upd_card_balance(callback: CallbackQuery):
+async def upd_card_balance(callback: CallbackQuery, state: FSMContext):
     card_id = int(callback.data[8:])
-    if callback.from_user.id not in users_status:
-        users_status[callback.from_user.id] = deepcopy(user_dict_template)
-    users_status[callback.from_user.id]["upd_card"]["create_balance"] = True
-    users_status[callback.from_user.id]["upd_card"]["card_id"] = card_id
+
+    await state.update_data(card_id=card_id)
+    await state.set_state(UpdCardState.upd_balance)
 
     await callback.message.edit_text(
         text=USER_LEXICON["update_card_balance"]["balance"],
@@ -223,30 +199,16 @@ async def upd_card_balance(callback: CallbackQuery):
     )
 
 
-@router.message(Command(commands="upd_card_balance"))
-async def set_upd_card_balance(message: Message, command: CommandObject):
-    if message.from_user.id not in users_status:
-        users_status[message.from_user.id] = deepcopy(user_dict_template)
-
-    if not users_status[message.from_user.id]["upd_card"]["create_balance"]:
-        await message.answer(USER_LEXICON["access_error"])
-        return
-
-    if command.args is None:
-        await message.answer(USER_LEXICON["upd_card_balance"]["empty_balance"])
-        return
-
+@router.message(StateFilter(UpdCardState.upd_balance))
+async def set_upd_card_balance(message: Message, state: FSMContext):
     try:
-        balance = float(command.args.strip())
-
+        balance = float(message.text.strip())
+        data = await state.get_data()
         async with async_session() as session:
-            card_id = users_status[message.from_user.id]["upd_card"]["card_id"]
+            card_id = data["card_id"]
             stmt = update(Card).where(Card.id == card_id).values(balance=balance)
             await session.execute(stmt)
             await session.commit()
-
-        users_status[message.from_user.id]["card"]["create_balance"] = False
-        users_status[message.from_user.id]["upd_card"]["card_id"] = 0
 
         await message.answer(USER_LEXICON["update_card_balance"]["successful_upd"])
 
