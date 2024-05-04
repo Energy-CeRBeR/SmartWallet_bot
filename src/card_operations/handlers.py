@@ -1,7 +1,5 @@
-from copy import deepcopy
-
 from aiogram import Router, F
-from aiogram.filters import Command, CommandObject, StateFilter
+from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
@@ -80,7 +78,7 @@ async def cancel_operation(callback: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data == "credit_card", StateFilter(AddCardState.add_type))
-async def temp_function_for_credit_card(callback: CallbackQuery, state: FSMContext):
+async def temp_function_for_credit_card(callback: CallbackQuery):
     await callback.message.delete()
     await callback.message.answer("Данный тип карт в разработке!")
 

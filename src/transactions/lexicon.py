@@ -7,12 +7,14 @@ def print_category_info(category) -> str:
 LEXICON: dict = {
     "income": {
         "empty_category_name": "Название категории не может быть пустым! Повторите попытку.",
+        "add_income_category": "Введите название новой категории доходов:",
         "category_is_create": "Новая категория доходов успешно создана!",
         "no_categories": "Пока что у вас нет ни одной категории доходов!",
         "categories_list": "Ваши категории доходов:"
     },
     "expense": {
         "empty_category_name": "Название категории не может быть пустым! Повторите попытку.",
+        "add_expense_category": "Введите название новой категории расходов:",
         "category_is_create": "Новая категория расходов успешно создана!",
         "no_categories": "Пока что у вас нет ни одной категории расходов!",
         "categories_list": "Ваши категории расходов:"
@@ -40,8 +42,7 @@ LEXICON: dict = {
     "category_delete": "Удалить категорию",
     "successful_del_category": "Категория успешно удалена!",
     "successful_upd_category_name": "Название категории успешно обновлено!",
-    "update_category_name": "Введите название категории командой\n"
-                            "/upd_category_name <Новое название категории>:",
+    "update_category_name": "Введите название категории: ",
     "card_list": "Выберите карту из списка:",
     "access_error": "Отказано в доступе!",
     "cancel_create": "Отменить создание!"
