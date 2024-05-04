@@ -7,7 +7,7 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
 from src.database.database import async_session
-from src.database.database import User
+from src.database.models import User
 from src.database.users_status import users_status, user_dict_template
 
 from src.user.lexicon import LEXICON as USER_LEXICON

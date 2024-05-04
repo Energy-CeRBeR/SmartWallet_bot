@@ -1,4 +1,4 @@
-from src.database.database import Card
+from src.database.models import Card
 
 '''def card_list(text: str, card: Card) -> str:
     text = (f"{text}\n\n"

@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from src.card_operations.lexicon import LEXICON
-from src.database.database import Card
+from src.database.models import Card
 
 
 def create_exit_keyboard() -> InlineKeyboardMarkup:

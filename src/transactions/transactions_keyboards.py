@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from src.transactions.lexicon import LEXICON
-from src.database.database import Income, Expense, IncomeCategory, ExpenseCategory, Card
+from src.database.models import IncomeCategory, ExpenseCategory, Card, Income, Expense
 
 
 def create_select_category_keyboard(categories: list) -> InlineKeyboardMarkup:

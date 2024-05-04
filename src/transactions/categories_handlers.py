@@ -7,7 +7,7 @@ from aiogram.types import Message, CallbackQuery
 from sqlalchemy import select, insert, delete, update
 
 from src.database.database import async_session
-from src.database.database import IncomeCategory, ExpenseCategory
+from src.database.models import IncomeCategory, ExpenseCategory
 
 from src.database.users_status import users_status, user_dict_template
 

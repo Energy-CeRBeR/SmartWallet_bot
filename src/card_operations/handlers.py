@@ -6,7 +6,8 @@ from aiogram.types import Message, CallbackQuery
 
 from sqlalchemy import select, insert, delete, update
 
-from src.database.database import async_session, Card, CardType
+from src.database.database import async_session
+from src.database.models import CardType, Card
 from src.database.users_status import users_status, user_dict_template
 
 from src.card_operations.lexicon import (
