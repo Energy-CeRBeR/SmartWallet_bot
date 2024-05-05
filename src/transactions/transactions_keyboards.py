@@ -42,3 +42,34 @@ def create_select_card_keyboard(cards: list[Card]) -> InlineKeyboardMarkup:
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard
+
+
+def create_description_keyboard() -> InlineKeyboardMarkup:
+    yes_button = InlineKeyboardButton(
+        text="Да",
+        callback_data=f"YES"
+    )
+    no_button = InlineKeyboardButton(
+        text="Нет",
+        callback_data=f"NO"
+    )
+    back_button = InlineKeyboardButton(
+        text=LEXICON["back_show_categories"],
+        callback_data="cancel[create_card]"
+    )
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [yes_button],
+            [no_button],
+            [back_button]
+        ]
+    )
+
+    return keyboard
+
+
+def create_done_keyboard() -> InlineKeyboardMarkup:
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Подтвердить создание", callback_data="commit_transaction")]
+    ])
+    return keyboard

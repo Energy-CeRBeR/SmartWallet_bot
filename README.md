@@ -1,2 +1,2 @@
 # SmartWallet_bot
-Telegram bot for SwartWallet service 
+Telegram bot for SmartWallet service 

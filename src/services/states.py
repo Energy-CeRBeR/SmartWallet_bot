@@ -27,4 +27,7 @@ class UpdCategoryState(StatesGroup):
 class AddCategoryState(StatesGroup):
     select_card = State()
     add_amount = State()
+    add_description = State()
+    get_description = State()
+    set_description = State()
     set_data = State()
