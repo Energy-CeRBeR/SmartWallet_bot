@@ -8,7 +8,7 @@ from sqlalchemy import select, insert, delete, update
 from src.database.database import async_session
 from src.database.models import IncomeCategory, ExpenseCategory, Card, Income, Expense
 
-from src.services.states import AddCategoryState
+from src.services.states import AddCategoryState, ShowIncomesState
 
 from src.transactions.lexicon import (
     LEXICON as USER_LEXICON,
@@ -23,20 +23,29 @@ from src.card_operations.keyboards import create_exit_keyboard
 
 router = Router()
 
-'''@router.message(Command(commands="incomes"))
-async def get_incomes(message: Message):
+
+@router.message(Command(commands="incomes"))
+async def get_incomes(message: Message, state: FSMContext):
     async with async_session() as session:
         query = select(Income).where(Income.tg_id == message.from_user.id)
         result = await session.execute(query)
         incomes = result.scalars().all()
+
         if incomes:
+            pages = len(incomes) // 10 + (len(incomes) % 10 != 0)
+            await state.set_state(ShowIncomesState.show_incomes)
+            await state.update_data(
+                page=1,
+                pages=pages
+            )
+
             buttons = [income for income in incomes]
             await message.answer(
                 text=USER_LEXICON["income_transactions"]["incomes_list"],
                 reply_markup=create_income_categories_keyboard(buttons)
             )
         else:
-            await message.answer(USER_LEXICON["income_transactions"]["no_incomes"])'''
+            await message.answer(USER_LEXICON["income_transactions"]["no_incomes"])
 
 
 @router.message(Command(commands="add_income"))

@@ -31,3 +31,11 @@ class AddCategoryState(StatesGroup):
     get_description = State()
     set_description = State()
     set_data = State()
+
+
+class ShowIncomesState(StatesGroup):
+    show_incomes = State()
+
+
+class ShowExpenseState(StatesGroup):
+    show_expense = State()
