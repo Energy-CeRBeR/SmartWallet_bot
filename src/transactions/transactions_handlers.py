@@ -26,9 +26,6 @@ from src.card_operations.keyboards import create_exit_keyboard
 router = Router()
 
 
-# Преобразовать expense_keyboard под incomes_keyboard + допилить функционал с переходом между страницами
-
-
 @router.message(Command(commands="incomes"))
 async def get_incomes(message: Message, state: FSMContext):
     async with async_session() as session:
@@ -39,41 +36,23 @@ async def get_incomes(message: Message, state: FSMContext):
     if incomes:
         pages = len(incomes) // 9 + (len(incomes) % 9 != 0)
         await state.set_state(ShowIncomesState.show_incomes)
-        await state.update_data(
-            page=1,
-            pages=pages
-        )
-
-        buttons = [incomes[i] for i in range(min(9, len(incomes)))]
+        buttons = [income for income in incomes]
         buttons.reverse()
 
+        await state.update_data(
+            page=1,
+            pages=pages,
+            incomes=buttons
+        )
+
+        cur_buttons = transaction_pagination(buttons, 0, "next")
+
         await message.answer(
-            text=USER_LEXICON["income"]["incomes_list"],
-            reply_markup=create_incomes_keyboard(buttons)
+            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница - 1 / {pages}',
+            reply_markup=create_incomes_keyboard(cur_buttons)
         )
     else:
         await message.answer(USER_LEXICON["income_transactions"]["no_incomes"])
-
-
-@router.callback_query(F.data[:9] == "next_page", StateFilter())
-async def goto_next_incomes_page(callback: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    cur_page = data["page"]
-
-    async with async_session() as session:
-        query = select(Income).where(Income.tg_id == callback.from_user.id)
-        result = await session.execute(query)
-        incomes = result.scalars().all()
-
-    pages = len(incomes) // 9 + (len(incomes) % 9 != 0)
-    buttons = transaction_pagination(incomes, cur_page, "next")
-
-    await callback.message.edit_text(
-        text="",
-        reply_markup=create_incomes_keyboard(buttons)
-    )
-
-    await state.update_data(page=cur_page + 1)
 
 
 @router.message(Command(commands="expenses"))
@@ -85,21 +64,92 @@ async def get_expenses(message: Message, state: FSMContext):
 
     if expenses:
         pages = len(expenses) // 9 + (len(expenses) % 9 != 0)
+        buttons = [expense for expense in expenses]
+        buttons.reverse()
+
         await state.set_state(ShowExpenseState.show_expenses)
         await state.update_data(
             page=1,
-            pages=pages
+            pages=pages,
+            expenses=buttons
         )
 
-        buttons = [expenses[i] for i in range(min(9, len(expenses)))]
-        buttons.reverse()
+        cur_buttons = transaction_pagination(buttons, 0, "next")
 
         await message.answer(
-            text=USER_LEXICON["expense"]["expenses_list"],
-            reply_markup=create_expenses_keyboard(buttons, 1)
+            text=f'{USER_LEXICON["expense"]["expenses_list"]}. Страница - 1 / {pages}',
+            reply_markup=create_expenses_keyboard(cur_buttons)
         )
     else:
         await message.answer(USER_LEXICON["expense_transactions"]["no_expenses"])
+
+
+@router.callback_query(F.data == "next_page", StateFilter(ShowIncomesState.show_incomes))
+async def goto_next_incomes_page(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    cur_page = data["page"]
+    incomes = data["incomes"]
+    buttons = transaction_pagination(incomes, cur_page, "next")
+    pages = data["pages"]
+
+    if cur_page > 0 and buttons:
+        await callback.message.edit_text(
+            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница - {cur_page + 1} / {pages}',
+            reply_markup=create_incomes_keyboard(buttons)
+        )
+
+        await state.update_data(page=cur_page + 1)
+
+
+@router.callback_query(F.data == "back_page", StateFilter(ShowIncomesState.show_incomes))
+async def goto_back_incomes_page(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    cur_page = data["page"]
+    incomes = data["incomes"]
+    buttons = transaction_pagination(incomes, cur_page, "back")
+    pages = data["pages"]
+
+    if cur_page > 0 and buttons:
+        await callback.message.edit_text(
+            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница - {cur_page - 1} / {pages}',
+            reply_markup=create_incomes_keyboard(buttons)
+        )
+
+        await state.update_data(page=cur_page - 1)
+
+
+@router.callback_query(F.data == "next_page", StateFilter(ShowExpenseState.show_expenses))
+async def goto_next_expenses_page(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    cur_page = data["page"]
+    expenses = data["expenses"]
+    buttons = transaction_pagination(expenses, cur_page, "next")
+    pages = data["pages"]
+
+    if cur_page > 0 and buttons:
+        await callback.message.edit_text(
+            text=f'{USER_LEXICON["expense"]["expenses_list"]} Страница - {cur_page + 1} / {pages}',
+            reply_markup=create_expenses_keyboard(buttons)
+        )
+
+        await state.update_data(page=cur_page + 1)
+
+
+@router.callback_query(F.data == "back_page", StateFilter(ShowExpenseState.show_expenses))
+async def goto_back_expenses_page(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    cur_page = data["page"]
+    expenses = data["expenses"]
+    buttons = transaction_pagination(expenses, cur_page, "back")
+    pages = data["pages"]
+
+    if cur_page > 0 and buttons:
+        await callback.message.edit_text(
+            text=f'{USER_LEXICON["expense"]["expenses_list"]} Страница - {cur_page - 1} / {pages}',
+            reply_markup=create_expenses_keyboard(buttons)
+        )
+
+        await state.update_data(page=cur_page - 1)
 
 
 @router.message(Command(commands="add_income"))

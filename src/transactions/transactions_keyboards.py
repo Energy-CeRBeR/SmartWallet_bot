@@ -34,7 +34,7 @@ def create_incomes_keyboard(incomes: list[Income]) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def create_expenses_keyboard(expenses: list[Expense], cur_page) -> InlineKeyboardMarkup:
+def create_expenses_keyboard(expenses: list[Expense]) -> InlineKeyboardMarkup:
     buttons = list()
     for expense in expenses:
         cur_expense = InlineKeyboardButton(
