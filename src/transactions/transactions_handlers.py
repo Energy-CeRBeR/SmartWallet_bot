@@ -18,8 +18,12 @@ from src.transactions.lexicon import (
 
 from src.transactions.transactions_keyboards import (
     create_select_category_keyboard,
-    create_select_card_keyboard, create_description_keyboard, create_done_keyboard, create_incomes_keyboard,
-    create_expenses_keyboard
+    create_select_card_keyboard,
+    create_description_keyboard,
+    create_done_keyboard,
+    create_incomes_keyboard,
+    create_expenses_keyboard,
+    create_transaction_edit_keyboard
 )
 from src.card_operations.keyboards import create_exit_keyboard
 
@@ -48,7 +52,7 @@ async def get_incomes(message: Message, state: FSMContext):
         cur_buttons = transaction_pagination(buttons, 0, "next")
 
         await message.answer(
-            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница - 1 / {pages}',
+            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница 1 / {pages}',
             reply_markup=create_incomes_keyboard(cur_buttons)
         )
     else:
@@ -77,7 +81,7 @@ async def get_expenses(message: Message, state: FSMContext):
         cur_buttons = transaction_pagination(buttons, 0, "next")
 
         await message.answer(
-            text=f'{USER_LEXICON["expense"]["expenses_list"]}. Страница - 1 / {pages}',
+            text=f'{USER_LEXICON["expense"]["expenses_list"]}. Страница 1 / {pages}',
             reply_markup=create_expenses_keyboard(cur_buttons)
         )
     else:
@@ -94,7 +98,7 @@ async def goto_next_incomes_page(callback: CallbackQuery, state: FSMContext):
 
     if cur_page > 0 and buttons:
         await callback.message.edit_text(
-            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница - {cur_page + 1} / {pages}',
+            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница {cur_page + 1} / {pages}',
             reply_markup=create_incomes_keyboard(buttons)
         )
 
@@ -111,7 +115,7 @@ async def goto_back_incomes_page(callback: CallbackQuery, state: FSMContext):
 
     if cur_page > 0 and buttons:
         await callback.message.edit_text(
-            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница - {cur_page - 1} / {pages}',
+            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница {cur_page - 1} / {pages}',
             reply_markup=create_incomes_keyboard(buttons)
         )
 
@@ -128,7 +132,7 @@ async def goto_next_expenses_page(callback: CallbackQuery, state: FSMContext):
 
     if cur_page > 0 and buttons:
         await callback.message.edit_text(
-            text=f'{USER_LEXICON["expense"]["expenses_list"]} Страница - {cur_page + 1} / {pages}',
+            text=f'{USER_LEXICON["expense"]["expenses_list"]} Страница {cur_page + 1} / {pages}',
             reply_markup=create_expenses_keyboard(buttons)
         )
 
@@ -145,11 +149,61 @@ async def goto_back_expenses_page(callback: CallbackQuery, state: FSMContext):
 
     if cur_page > 0 and buttons:
         await callback.message.edit_text(
-            text=f'{USER_LEXICON["expense"]["expenses_list"]} Страница - {cur_page - 1} / {pages}',
+            text=f'{USER_LEXICON["expense"]["expenses_list"]} Страница {cur_page - 1} / {pages}',
             reply_markup=create_expenses_keyboard(buttons)
         )
 
         await state.update_data(page=cur_page - 1)
+
+
+@router.callback_query(F.data[:10] == "get_income", StateFilter(ShowIncomesState.show_incomes))
+async def get_income_info(callback: CallbackQuery):
+    income_id = int(callback.data[10:])
+    async with async_session() as session:
+        query = select(Income).where(Income.id == income_id)
+        result = await session.execute(query)
+        income = result.scalars().first()
+
+        query = select(IncomeCategory).where(IncomeCategory.id == income.category_id)
+        result = await session.execute(query)
+        income_category = result.scalars().first()
+
+    description = income.description if income.description else USER_LEXICON["income_info"]["no_description"]
+    await callback.message.edit_text(
+        text=(
+            f'{USER_LEXICON["income_info"]["info"]}\n'
+            f'{USER_LEXICON["income_info"]["category"]}: {income_category.name}\n'
+            f'{USER_LEXICON["income_info"]["amount"]}: {income.amount}\n'
+            f'{USER_LEXICON["income_info"]["date"]}: {income.date}\n'
+            f'{USER_LEXICON["income_info"]["description"]}: {description}'
+        ),
+        reply_markup=create_transaction_edit_keyboard(transaction_type="in")
+    )
+
+
+@router.callback_query(F.data[:11] == "get_expense", StateFilter(ShowExpenseState.show_expenses))
+async def get_expense_info(callback: CallbackQuery):
+    expense_id = int(callback.data[11:])
+    async with async_session() as session:
+        query = select(Expense).where(Expense.id == expense_id)
+        result = await session.execute(query)
+        expense = result.scalars().first()
+
+        query = select(ExpenseCategory).where(ExpenseCategory.id == expense.category_id)
+        result = await session.execute(query)
+        expense_category = result.scalars().first()
+
+    description = expense.description if expense.description else USER_LEXICON["expense_info"]["no_description"]
+    await callback.message.edit_text(
+        text=(
+            f'{USER_LEXICON["expense_info"]["info"]}\n'
+            f'{USER_LEXICON["expense_info"]["category"]}: {expense_category.name}\n'
+            f'{USER_LEXICON["expense_info"]["amount"]}: {expense.amount}\n'
+            f'{USER_LEXICON["expense_info"]["date"]}: {expense.date}\n'
+            f'{USER_LEXICON["expense_info"]["description"]}: {description}'
+        ),
+        reply_markup=create_transaction_edit_keyboard(transaction_type="in")
+    )
 
 
 @router.message(Command(commands="add_income"))
@@ -315,3 +369,9 @@ async def set_transaction(callback: CallbackQuery, state: FSMContext):
         await state.clear()
         await callback.message.delete()
         await callback.message.answer(text=USER_LEXICON[transactions]["income_is_create"])
+
+
+@router.callback_query(F.data == "exit")
+async def create_exit_router(callback: CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await state.clear()

@@ -11,14 +11,14 @@ def create_incomes_keyboard(incomes: list[Income]) -> InlineKeyboardMarkup:
     buttons = list()
     for income in incomes:
         cur_income = InlineKeyboardButton(
-            text=f"Размер дохода: {income.amount}",
+            text=f"Дата: {income.date}, Сумма: {income.amount}",
             callback_data=f"get_income{income.id}"
         )
         buttons.append([cur_income])
 
     exit_button = InlineKeyboardButton(
-        text=LEXICON["back_show_categories"],
-        callback_data="cancel[create_card]"
+        text="Выход",
+        callback_data="exit"
     )
     back_page_button = InlineKeyboardButton(
         text=LEXICON["back_page"],
@@ -38,14 +38,14 @@ def create_expenses_keyboard(expenses: list[Expense]) -> InlineKeyboardMarkup:
     buttons = list()
     for expense in expenses:
         cur_expense = InlineKeyboardButton(
-            text=f"Размер расхода: {expense.amount}",
+            text=f"Дата: {expense.date}, Сумма: {expense.amount}",
             callback_data=f"get_expense{expense.id}"
         )
         buttons.append([cur_expense])
 
     exit_button = InlineKeyboardButton(
-        text=LEXICON["back_show_categories"],
-        callback_data="cancel[create_card]"
+        text="Выход",
+        callback_data="exit"
     )
     back_page_button = InlineKeyboardButton(
         text=LEXICON["back_page"],
@@ -57,6 +57,42 @@ def create_expenses_keyboard(expenses: list[Expense]) -> InlineKeyboardMarkup:
     )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[*buttons, [back_page_button, exit_button, next_page_button]])
+
+    return keyboard
+
+
+def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMarkup:
+    edit_category_button = InlineKeyboardButton(
+        text="Изменить категорию",
+        callback_data=f"edit_{transaction_type}_category"
+    )
+    edit_amount_button = InlineKeyboardButton(
+        text="Изменить сумму",
+        callback_data=f"edit_{transaction_type}_amount"
+    )
+    edit_date_button = InlineKeyboardButton(
+        text="Изменить дату",
+        callback_data=f"edit_{transaction_type}_date"
+    )
+    edit_description_button = InlineKeyboardButton(
+        text="Изменить / добавить описание",
+        callback_data=f"edit_{transaction_type}_description"
+    )
+
+    exit_button = InlineKeyboardButton(
+        text="Выход",
+        callback_data="exit"
+    )
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [edit_category_button],
+            [edit_amount_button],
+            [edit_date_button],
+            [edit_description_button],
+            [exit_button]
+        ]
+    )
 
     return keyboard
 
