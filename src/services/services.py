@@ -20,8 +20,8 @@ def isValidBalance(s: list) -> bool:
     return _is_number(s[0])
 
 
-def transaction_pagination(transactions: list, cur_page: int, pages: int, limit=10) -> list:
-    if len(transactions) > limit * (cur_page + 1):
-        return transactions[(cur_page + 1) * limit: (cur_page + 2) * limit]
+def transaction_pagination(transactions: list, cur_page: int, to_do: str, limit: int = 9) -> list:
+    if to_do == "next":
+        return transactions[cur_page * limit: (cur_page + 1) * limit]
     else:
-        return []
+        return transactions[(cur_page - 1) * limit: cur_page]

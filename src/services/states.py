@@ -38,4 +38,4 @@ class ShowIncomesState(StatesGroup):
 
 
 class ShowExpenseState(StatesGroup):
-    show_expense = State()
+    show_expenses = State()

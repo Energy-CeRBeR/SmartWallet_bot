@@ -7,8 +7,9 @@ from sqlalchemy import select, insert, delete, update
 
 from src.database.database import async_session
 from src.database.models import IncomeCategory, ExpenseCategory, Card, Income, Expense
+from src.services.services import transaction_pagination
 
-from src.services.states import AddCategoryState, ShowIncomesState
+from src.services.states import AddCategoryState, ShowIncomesState, ShowExpenseState
 
 from src.transactions.lexicon import (
     LEXICON as USER_LEXICON,
@@ -17,11 +18,15 @@ from src.transactions.lexicon import (
 
 from src.transactions.transactions_keyboards import (
     create_select_category_keyboard,
-    create_select_card_keyboard, create_description_keyboard, create_done_keyboard
+    create_select_card_keyboard, create_description_keyboard, create_done_keyboard, create_incomes_keyboard,
+    create_expenses_keyboard
 )
 from src.card_operations.keyboards import create_exit_keyboard
 
 router = Router()
+
+
+# Преобразовать expense_keyboard под incomes_keyboard + допилить функционал с переходом между страницами
 
 
 @router.message(Command(commands="incomes"))
@@ -31,21 +36,70 @@ async def get_incomes(message: Message, state: FSMContext):
         result = await session.execute(query)
         incomes = result.scalars().all()
 
-        if incomes:
-            pages = len(incomes) // 10 + (len(incomes) % 10 != 0)
-            await state.set_state(ShowIncomesState.show_incomes)
-            await state.update_data(
-                page=1,
-                pages=pages
-            )
+    if incomes:
+        pages = len(incomes) // 9 + (len(incomes) % 9 != 0)
+        await state.set_state(ShowIncomesState.show_incomes)
+        await state.update_data(
+            page=1,
+            pages=pages
+        )
 
-            buttons = [income for income in incomes]
-            await message.answer(
-                text=USER_LEXICON["income_transactions"]["incomes_list"],
-                reply_markup=create_income_categories_keyboard(buttons)
-            )
-        else:
-            await message.answer(USER_LEXICON["income_transactions"]["no_incomes"])
+        buttons = [incomes[i] for i in range(min(9, len(incomes)))]
+        buttons.reverse()
+
+        await message.answer(
+            text=USER_LEXICON["income"]["incomes_list"],
+            reply_markup=create_incomes_keyboard(buttons)
+        )
+    else:
+        await message.answer(USER_LEXICON["income_transactions"]["no_incomes"])
+
+
+@router.callback_query(F.data[:9] == "next_page", StateFilter())
+async def goto_next_incomes_page(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    cur_page = data["page"]
+
+    async with async_session() as session:
+        query = select(Income).where(Income.tg_id == callback.from_user.id)
+        result = await session.execute(query)
+        incomes = result.scalars().all()
+
+    pages = len(incomes) // 9 + (len(incomes) % 9 != 0)
+    buttons = transaction_pagination(incomes, cur_page, "next")
+
+    await callback.message.edit_text(
+        text="",
+        reply_markup=create_incomes_keyboard(buttons)
+    )
+
+    await state.update_data(page=cur_page + 1)
+
+
+@router.message(Command(commands="expenses"))
+async def get_expenses(message: Message, state: FSMContext):
+    async with async_session() as session:
+        query = select(Expense).where(Expense.tg_id == message.from_user.id)
+        result = await session.execute(query)
+        expenses = result.scalars().all()
+
+    if expenses:
+        pages = len(expenses) // 9 + (len(expenses) % 9 != 0)
+        await state.set_state(ShowExpenseState.show_expenses)
+        await state.update_data(
+            page=1,
+            pages=pages
+        )
+
+        buttons = [expenses[i] for i in range(min(9, len(expenses)))]
+        buttons.reverse()
+
+        await message.answer(
+            text=USER_LEXICON["expense"]["expenses_list"],
+            reply_markup=create_expenses_keyboard(buttons, 1)
+        )
+    else:
+        await message.answer(USER_LEXICON["expense_transactions"]["no_expenses"])
 
 
 @router.message(Command(commands="add_income"))
@@ -192,7 +246,7 @@ async def set_transaction(callback: CallbackQuery, state: FSMContext):
 
     async with async_session() as session:
         stmt = insert(category_type).values(
-            tg_id=callback.message.from_user.id,
+            tg_id=callback.from_user.id,  # Отследить tg_id добавления
             category_id=data["category_id"],
             card_id=data["card_id"],
             amount=amount,
@@ -207,5 +261,7 @@ async def set_transaction(callback: CallbackQuery, state: FSMContext):
         await session.execute(stmt)
         await session.execute(card_update)
         await session.commit()
+
         await state.clear()
+        await callback.message.delete()
         await callback.message.answer(text=USER_LEXICON[transactions]["income_is_create"])

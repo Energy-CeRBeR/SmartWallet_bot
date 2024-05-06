@@ -10,6 +10,7 @@ LEXICON: dict = {
         "add_income_category": "Введите название новой категории доходов:",
         "category_is_create": "Новая категория доходов успешно создана!",
         "no_categories": "Пока что у вас нет ни одной категории доходов!",
+        "incomes_list": "Ваш список доходов:",
         "categories_list": "Ваши категории доходов:"
     },
     "expense": {
@@ -17,6 +18,7 @@ LEXICON: dict = {
         "add_expense_category": "Введите название новой категории расходов:",
         "category_is_create": "Новая категория расходов успешно создана!",
         "no_categories": "Пока что у вас нет ни одной категории расходов!",
+        "expenses_list": "Ваш список расходов:",
         "categories_list": "Ваши категории расходов:"
     },
     "income_transactions": {
@@ -47,7 +49,9 @@ LEXICON: dict = {
     "update_category_name": "Введите название категории: ",
     "card_list": "Выберите карту из списка:",
     "access_error": "Отказано в доступе!",
-    "cancel_create": "Отменить создание!"
+    "cancel_create": "Отменить создание!",
+    "back_page": "<<",
+    "next_page": ">>"
 }
 
 LEXICON_COMMANDS: dict = {
