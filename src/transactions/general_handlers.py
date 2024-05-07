@@ -148,3 +148,10 @@ async def set_transaction(callback: CallbackQuery, state: FSMContext):
 async def create_exit_router(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     await state.clear()
+
+
+@router.callback_query(F.data == "cancel_edit_transaction")
+async def create_cancel_edit_transaction(callback: CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await callback.message.answer(USER_LEXICON["exit_from_edit"])
+    await state.clear()

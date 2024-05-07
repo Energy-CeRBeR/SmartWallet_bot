@@ -1,4 +1,4 @@
-from aiogram import F
+from aiogram import F, Router
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
@@ -9,9 +9,10 @@ from src.database.models import Expense, ExpenseCategory
 from src.services.services import transaction_pagination
 from src.services.states import ShowExpenseState, AddCategoryState
 from src.transactions.lexicon import LEXICON as USER_LEXICON, LEXICON_COMMANDS as USER_LEXICON_COMMANDS
-from src.transactions.general_handlers import router
 from src.transactions.transactions_keyboards import create_expenses_keyboard, create_transaction_edit_keyboard, \
     create_select_category_keyboard
+
+router = Router()
 
 
 @router.message(Command(commands="expenses"))

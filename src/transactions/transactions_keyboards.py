@@ -7,6 +7,16 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from src.services.services import transaction_pagination
 
 
+def create_exit_transaction_edit_keyboard() -> InlineKeyboardMarkup:
+    back_button = InlineKeyboardButton(
+        text=LEXICON["cancel_edit"],
+        callback_data="cancel_edit_transaction"
+    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+
+    return keyboard
+
+
 def create_incomes_keyboard(incomes: list[Income]) -> InlineKeyboardMarkup:
     buttons = list()
     for income in incomes:
@@ -97,18 +107,21 @@ def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMar
     return keyboard
 
 
-def create_select_category_keyboard(categories: list) -> InlineKeyboardMarkup:
+def create_select_category_keyboard(categories: list, edit=False) -> InlineKeyboardMarkup:
     buttons = list()
     for category in categories:
+        callback_data = f"select_card{category.id}" if not edit else f"set_category{category.id}"
         cur_category = InlineKeyboardButton(
             text=category.name,
-            callback_data=f"select_card{category.id}"
+            callback_data=callback_data
         )
         buttons.append([cur_category])
+
+    text = LEXICON["cancel_create"] if not edit else LEXICON["cancel_edit"]
     buttons.append(
         [
             InlineKeyboardButton(
-                text=LEXICON["cancel_create"],
+                text=text,
                 callback_data="cancel[create_card]"
             )
         ]

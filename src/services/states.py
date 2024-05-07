@@ -35,7 +35,9 @@ class AddCategoryState(StatesGroup):
 
 class ShowIncomesState(StatesGroup):
     show_incomes = State()
+    set_new_amount = State()
 
 
 class ShowExpenseState(StatesGroup):
     show_expenses = State()
+    set_new_amount = State()
