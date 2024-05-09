@@ -76,6 +76,10 @@ def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMar
         text="Изменить категорию",
         callback_data=f"edit_{transaction_type}_category"
     )
+    edit_card_button = InlineKeyboardButton(
+        text="Изменить карту",
+        callback_data=f"edit_{transaction_type}_card"
+    )
     edit_amount_button = InlineKeyboardButton(
         text="Изменить сумму",
         callback_data=f"edit_{transaction_type}_amount"
@@ -97,6 +101,7 @@ def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMar
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [edit_category_button],
+            [edit_card_button],
             [edit_amount_button],
             [edit_date_button],
             [edit_description_button],

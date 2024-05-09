@@ -25,18 +25,23 @@ def create_exit_show_card_keyboard(text: str) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def create_cards_keyboard(cards: list[Card]) -> InlineKeyboardMarkup:
+def create_cards_keyboard(cards: list[Card], edit=False) -> InlineKeyboardMarkup:
     buttons = list()
     for card in cards:
         cur_card = InlineKeyboardButton(
             text=card.name,
-            callback_data=f"get_card{card.id}"
+            callback_data=f"get_card{card.id}" if not edit else f"set_card{card.id}"
         )
         buttons.append([cur_card])
 
+    text = LEXICON["back_show_card"] if not edit else LEXICON["cancel_edit"]
+    callback_data = "cancel[show_card]" if not edit else "cancel[create_card]"
     buttons.append(
         [
-            InlineKeyboardButton(text=LEXICON["back_show_card"], callback_data="cancel[show_card]")
+            InlineKeyboardButton(
+                text=text,
+                callback_data=callback_data
+            )
         ]
     )
 

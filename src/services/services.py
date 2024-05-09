@@ -1,23 +1,25 @@
-import re
+def isValidDate(date: str) -> bool:
+    try:
+        day, month, year = map(int, date.split('.'))
 
+        if year < 0:
+            return False
 
-def _is_number(s: str) -> bool:
-    s = s.replace(",", ".")
+        if month < 1 or month > 12:
+            return False
 
-    if s.count(".") > 1:
-        return False
-    if re.match(r'\d+', s):
+        days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+        if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0):
+            days_in_month[1] = 29
+
+        if day < 1 or day > days_in_month[month - 1]:
+            return False
+
         return True
-    elif re.match(r'\d+(\.\d+)?', s):
-        return True
-    else:
-        return False
 
-
-def isValidBalance(s: list) -> bool:
-    if len(s) > 1:
+    except ValueError:
         return False
-    return _is_number(s[0])
 
 
 def transaction_pagination(transactions: list, cur_page: int, to_do: str, limit: int = 9) -> list:

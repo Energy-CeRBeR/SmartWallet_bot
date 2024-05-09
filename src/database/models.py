@@ -56,6 +56,9 @@ class Card(Base):
     tg_id: Mapped[int] = mapped_column(ForeignKey("users.tg_id"))
     balance: Mapped[float] = mapped_column(nullable=False)
 
+    incomes = relationship("Income")
+    expenses = relationship("Expense")
+
 
 class Income(Base):
     __tablename__ = "incomes"

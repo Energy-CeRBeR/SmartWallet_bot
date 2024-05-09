@@ -55,6 +55,7 @@ LEXICON: dict = {
     "exit_update": "Отменить обновление",
     "cancel[show_card]": "",
     "cancel[create_card]": "Операция создания отменена!",
+    "cancel_edit": "Отменить изменение!",
     "success_del_card": "Карта успешно удалена!",
     "card_update": "Обновить карту",
     "card_delete": "Удалить карту",
