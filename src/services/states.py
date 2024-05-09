@@ -42,7 +42,7 @@ class ShowIncomesState(StatesGroup):
     set_new_date = State()
 
 
-class ShowExpenseState(StatesGroup):
+class ShowExpensesState(StatesGroup):
     show_expenses = State()
     set_new_category = State()
     set_new_card = State()

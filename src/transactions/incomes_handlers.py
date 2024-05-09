@@ -27,10 +27,10 @@ async def get_incomes(message: Message, state: FSMContext):
 
     if incomes:
         pages = len(incomes) // 9 + (len(incomes) % 9 != 0)
-        await state.set_state(ShowIncomesState.show_incomes)
         buttons = [income for income in incomes]
         buttons.sort(key=lambda x: x.date, reverse=True)
 
+        await state.set_state(ShowIncomesState.show_incomes)
         await state.update_data(
             page=1,
             pages=pages,
@@ -309,8 +309,6 @@ async def set_new_income_description(message: Message, state: FSMContext):
     await state.set_state(ShowIncomesState.show_incomes)
     await message.answer(USER_LEXICON["edit_income"]["description_is_update"])
 
-# Добавить возможность добавления даты в транзакцию + допилить остальные элементы изменения транзакции.
+# Добавить возможность добавления даты в транзакцию при создании
 # После добавить default_state, создать хэндлеры-обработчики на случай не прохождения в определённый хэндлер.
 # Добавление default_state нужно будет делать в отдельной ветке add_states.
-# Добавить обновление баланса карты после изменения размера дохода.
-# Добавить правильную сортировку списка расходов + сделать полностью модуль расходов по аналогии с модулем доходов.
