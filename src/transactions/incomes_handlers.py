@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery
 from sqlalchemy import select, update
 
 from src.database.database import async_session
-from src.database.models import Income, IncomeCategory
+from src.database.models import Income, IncomeCategory, Card
 from src.services.services import transaction_pagination
 from src.services.states import ShowIncomesState, AddCategoryState
 from src.transactions.lexicon import LEXICON as USER_LEXICON, LEXICON_COMMANDS as USER_LEXICON_COMMANDS
@@ -90,12 +90,21 @@ async def get_income_info(callback: CallbackQuery, state: FSMContext):
         result = await session.execute(query)
         income_category = result.scalars().first()
 
+        query = select(Card).where(Card.id == income.card_id)
+        result = await session.execute(query)
+        card = result.scalars().first()
+
     description = income.description if income.description else USER_LEXICON["income_info"]["no_description"]
-    await state.update_data(income_id=income_id)
+    await state.update_data(
+        income=income,
+        card=card,
+        income_category=income_category
+    )
     await callback.message.edit_text(
         text=(
             f'{USER_LEXICON["income_info"]["info"]}\n'
             f'{USER_LEXICON["income_info"]["category"]}: {income_category.name}\n'
+            f'{USER_LEXICON["income_info"]["card"]}: {card.name}\n'
             f'{USER_LEXICON["income_info"]["amount"]}: {income.amount}\n'
             f'{USER_LEXICON["income_info"]["date"]}: {income.date}\n'
             f'{USER_LEXICON["income_info"]["description"]}: {description}'
@@ -142,10 +151,10 @@ async def change_income_category(callback: CallbackQuery):
 
 
 @router.callback_query(F.data[:12] == "set_category", StateFilter(ShowIncomesState.show_incomes))
-async def select_card(callback: CallbackQuery, state: FSMContext):
+async def set_new_category(callback: CallbackQuery, state: FSMContext):
     category_id = int(callback.data[12:])
     data = await state.get_data()
-    income_id = data["income_id"]
+    income_id = data["income"].id
     async with (async_session() as session):
         stmt = update(Income).where(Income.id == income_id).values(category_id=category_id)
         await session.execute(stmt)
@@ -169,9 +178,19 @@ async def set_new_amount(message: Message, state: FSMContext):
     try:
         amount = float(message.text.strip())
         data = await state.get_data()
-        income_id = data["income_id"]
+        income = data["income"]
+        card = data["card"]
+
+        d = amount - income.amount
+        new_balance = card.balance + d
+        card.balance = new_balance
+        await state.update_data(card=card)
         async with (async_session() as session):
-            stmt = update(Income).where(Income.id == income_id).values(amount=amount)
+            stmt = update(Income).where(Income.id == income.id).values(amount=amount)
+            await session.execute(stmt)
+            await session.commit()
+
+            stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
             await session.execute(stmt)
             await session.commit()
 
