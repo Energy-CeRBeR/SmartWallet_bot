@@ -4,6 +4,8 @@ from aiogram import F, Router
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.state import default_state
+
 from sqlalchemy import select, update
 
 from src.card_operations.keyboards import create_cards_keyboard
@@ -18,7 +20,7 @@ from src.transactions.transactions_keyboards import create_incomes_keyboard, cre
 router = Router()
 
 
-@router.message(Command(commands="incomes"))
+@router.message(Command(commands="incomes"), StateFilter(default_state))
 async def get_incomes(message: Message, state: FSMContext):
     async with async_session() as session:
         query = select(Income).where(Income.tg_id == message.from_user.id)

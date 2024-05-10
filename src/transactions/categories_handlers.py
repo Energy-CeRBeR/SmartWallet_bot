@@ -1,9 +1,8 @@
-from copy import deepcopy
-
 from aiogram import Router, F
 from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.state import default_state
 
 from sqlalchemy import select, insert, delete, update
 
@@ -27,7 +26,7 @@ from src.card_operations.keyboards import create_exit_show_card_keyboard
 router = Router()
 
 
-@router.message(Command(commands="in_categories"))
+@router.message(Command(commands="in_categories"), StateFilter(default_state))
 async def get_income_categories(message: Message):
     async with async_session() as session:
         query = select(IncomeCategory).where(IncomeCategory.tg_id == message.from_user.id)
@@ -43,7 +42,7 @@ async def get_income_categories(message: Message):
             await message.answer(USER_LEXICON["income"]["no_categories"])
 
 
-@router.message(Command(commands="ex_categories"))
+@router.message(Command(commands="ex_categories"), StateFilter(default_state))
 async def get_expense_categories(message: Message):
     async with async_session() as session:
         query = select(ExpenseCategory).where(ExpenseCategory.tg_id == message.from_user.id)
@@ -87,7 +86,7 @@ async def show_expense_category(callback: CallbackQuery):
         )
 
 
-@router.message(Command(commands="add_in_category"))
+@router.message(Command(commands="add_in_category"), StateFilter(default_state))
 async def add_income_category(message: Message, state: FSMContext):
     await message.answer(USER_LEXICON["income"]["add_income_category"])
     await state.set_state(AddIncomeCategoryState.add_name)
@@ -107,7 +106,7 @@ async def set_income_category(message: Message, state: FSMContext):
     await state.clear()
 
 
-@router.message(Command(commands="add_ex_category"))
+@router.message(Command(commands="add_ex_category"), StateFilter(default_state))
 async def add_expense_category(message: Message, state: FSMContext):
     await message.answer(USER_LEXICON["expense"]["add_expense_category"])
     await state.set_state(AddExpenseCategoryState.add_name)

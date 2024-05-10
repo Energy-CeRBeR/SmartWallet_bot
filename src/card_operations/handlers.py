@@ -2,6 +2,7 @@ from aiogram import Router, F
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.state import default_state
 
 from sqlalchemy import select, insert, delete, update
 
@@ -28,7 +29,7 @@ from src.card_operations.keyboards import (
 router = Router()
 
 
-@router.message(Command(commands="cards"))
+@router.message(Command(commands="cards"), StateFilter(default_state))
 async def get_cards(message: Message):
     async with async_session() as session:
         query = select(Card).where(Card.tg_id == message.from_user.id)

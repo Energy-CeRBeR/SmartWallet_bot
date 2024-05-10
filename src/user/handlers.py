@@ -2,7 +2,7 @@ from sqlalchemy import select, insert
 
 from aiogram import Router
 from aiogram.filters import CommandStart, Command, StateFilter
-from aiogram.fsm.state import default_state, StatesGroup
+from aiogram.fsm.state import default_state
 from aiogram.types import Message
 
 from src.database.database import async_session
@@ -13,7 +13,7 @@ from src.user.lexicon import LEXICON_COMMANDS as USER_LEXICON_COMMANDS
 router = Router()
 
 
-@router.message(CommandStart())
+@router.message(CommandStart(), StateFilter(default_state))
 async def start_bot(message: Message):
     async with async_session() as session:
         query = select(User).where(User.tg_id == message.from_user.id)
@@ -32,6 +32,6 @@ async def start_bot(message: Message):
             await message.answer(USER_LEXICON_COMMANDS[message.text]["new_user"])
 
 
-@router.message(Command(commands="help"))
+@router.message(Command(commands="help"), StateFilter(default_state))
 async def help_info(message: Message):
     await message.answer(text=USER_LEXICON_COMMANDS[message.text])
