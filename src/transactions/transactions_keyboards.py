@@ -4,7 +4,7 @@ from src.transactions.lexicon import LEXICON
 from src.database.models import IncomeCategory, ExpenseCategory, Card, Income, Expense
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from src.services.services import transaction_pagination
+from src.services.services import pagination
 
 
 def create_exit_transaction_edit_keyboard() -> InlineKeyboardMarkup:

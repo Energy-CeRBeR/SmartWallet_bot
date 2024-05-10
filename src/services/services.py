@@ -22,8 +22,8 @@ def isValidDate(date: str) -> bool:
         return False
 
 
-def transaction_pagination(transactions: list, cur_page: int, to_do: str, limit: int = 9) -> list:
+def pagination(data: list, cur_page: int, to_do: str, limit: int = 9) -> list:
     if to_do == "next":
-        return transactions[cur_page * limit: cur_page * limit + 9]
+        return data[cur_page * limit: cur_page * limit + 9]
     else:
-        return transactions[(cur_page - 9) * limit:(cur_page - 9) * limit + 9]
+        return data[(cur_page - 9) * limit:(cur_page - 9) * limit + 9]

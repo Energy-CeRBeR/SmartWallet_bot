@@ -11,7 +11,7 @@ from sqlalchemy import select, update
 from src.card_operations.keyboards import create_cards_keyboard
 from src.database.database import async_session
 from src.database.models import Income, IncomeCategory, Card
-from src.services.services import transaction_pagination, isValidDate
+from src.services.services import pagination, isValidDate
 from src.services.states import ShowIncomesState, AddCategoryState
 from src.transactions.lexicon import LEXICON as USER_LEXICON, LEXICON_COMMANDS as USER_LEXICON_COMMANDS
 from src.transactions.transactions_keyboards import create_incomes_keyboard, create_transaction_edit_keyboard, \
@@ -39,7 +39,7 @@ async def get_incomes(message: Message, state: FSMContext):
             incomes=buttons
         )
 
-        cur_buttons = transaction_pagination(buttons, 0, "next")
+        cur_buttons = pagination(buttons, 0, "next")
 
         await message.answer(
             text=f'{USER_LEXICON["income"]["incomes_list"]} Страница 1 / {pages}',
@@ -54,7 +54,7 @@ async def goto_next_incomes_page(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     cur_page = data["page"]
     incomes = data["incomes"]
-    buttons = transaction_pagination(incomes, cur_page, "next")
+    buttons = pagination(incomes, cur_page, "next")
     pages = data["pages"]
 
     if cur_page > 0 and buttons:
@@ -71,7 +71,7 @@ async def goto_back_incomes_page(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     cur_page = data["page"]
     incomes = data["incomes"]
-    buttons = transaction_pagination(incomes, cur_page, "back")
+    buttons = pagination(incomes, cur_page, "back")
     pages = data["pages"]
 
     if cur_page > 0 and buttons:

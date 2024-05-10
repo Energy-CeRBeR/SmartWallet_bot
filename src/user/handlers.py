@@ -52,7 +52,4 @@ async def error_directory_handler(message: Message):
 async def stop_all_process(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     await state.clear()
-    await callback.message.answer(
-        text=USER_LEXICON["stop_all_processes"],
-        reply_markup=create_stop_keyboard()
-    )
+    await callback.message.answer(USER_LEXICON["stop_all_processes"])
