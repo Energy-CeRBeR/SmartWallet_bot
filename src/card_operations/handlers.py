@@ -46,7 +46,7 @@ async def get_cards(message: Message, state: FSMContext):
             await message.answer(USER_LEXICON_COMMANDS[message.text]["no_cards"])
 
 
-@router.callback_query(F.data[:8] == "get_card", ShowCardState.show_card)
+@router.callback_query(F.data[:8] == "get_card", StateFilter(ShowCardState.show_card))
 async def show_card(callback: CallbackQuery):
     card_id = int(callback.data[8:])
     async with async_session() as session:

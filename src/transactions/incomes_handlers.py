@@ -118,7 +118,7 @@ async def get_income_info(callback: CallbackQuery, state: FSMContext):
     )
 
 
-@router.message(Command(commands="add_income"))
+@router.message(Command(commands="add_income"), StateFilter(default_state))
 async def select_income_type(message: Message, state: FSMContext):
     async with async_session() as session:
         query = select(IncomeCategory).where(IncomeCategory.tg_id == message.from_user.id)
@@ -312,5 +312,3 @@ async def set_new_income_description(message: Message, state: FSMContext):
     await message.answer(USER_LEXICON["edit_income"]["description_is_update"])
 
 # Добавить возможность добавления даты в транзакцию при создании
-# После добавить default_state, создать хэндлеры-обработчики на случай не прохождения в определённый хэндлер.
-# Добавление default_state нужно будет делать в отдельной ветке add_states.

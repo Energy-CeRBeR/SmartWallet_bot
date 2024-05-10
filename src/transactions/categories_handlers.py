@@ -6,7 +6,8 @@ from aiogram.fsm.state import default_state
 
 from sqlalchemy import select, insert, delete, update
 
-from src.services.states import AddIncomeCategoryState, AddExpenseCategoryState, UpdCategoryState
+from src.services.states import AddIncomeCategoryState, AddExpenseCategoryState, UpdCategoryState, \
+    ShowIncomesCategoryState, ShowExpensesCategoryState
 
 from src.database.database import async_session
 from src.database.models import IncomeCategory, ExpenseCategory
@@ -27,7 +28,7 @@ router = Router()
 
 
 @router.message(Command(commands="in_categories"), StateFilter(default_state))
-async def get_income_categories(message: Message):
+async def get_income_categories(message: Message, state: FSMContext):
     async with async_session() as session:
         query = select(IncomeCategory).where(IncomeCategory.tg_id == message.from_user.id)
         result = await session.execute(query)
@@ -38,12 +39,13 @@ async def get_income_categories(message: Message):
                 text=USER_LEXICON["income"]["categories_list"],
                 reply_markup=create_income_categories_keyboard(buttons)
             )
+            await state.set_state(ShowIncomesCategoryState.show_category)
         else:
             await message.answer(USER_LEXICON["income"]["no_categories"])
 
 
 @router.message(Command(commands="ex_categories"), StateFilter(default_state))
-async def get_expense_categories(message: Message):
+async def get_expense_categories(message: Message, state: FSMContext):
     async with async_session() as session:
         query = select(ExpenseCategory).where(ExpenseCategory.tg_id == message.from_user.id)
         result = await session.execute(query)
@@ -54,11 +56,12 @@ async def get_expense_categories(message: Message):
                 text=USER_LEXICON["expense"]["categories_list"],
                 reply_markup=create_expense_categories_keyboard(buttons)
             )
+            await state.set_state(ShowExpensesCategoryState.show_category)
         else:
             await message.answer(USER_LEXICON["expense"]["no_categories"])
 
 
-@router.callback_query(F.data[:15] == "get_in_category")
+@router.callback_query(F.data[:15] == "get_in_category", StateFilter(ShowIncomesCategoryState.show_category))
 async def show_income_category(callback: CallbackQuery):
     category_id = int(callback.data[15:])
     async with async_session() as session:
@@ -72,7 +75,7 @@ async def show_income_category(callback: CallbackQuery):
         )
 
 
-@router.callback_query(F.data[:15] == "get_ex_category")
+@router.callback_query(F.data[:15] == "get_ex_category", StateFilter(ShowExpensesCategoryState.show_category))
 async def show_expense_category(callback: CallbackQuery):
     category_id = int(callback.data[15:])
     async with async_session() as session:
@@ -86,7 +89,7 @@ async def show_expense_category(callback: CallbackQuery):
         )
 
 
-@router.message(Command(commands="add_in_category"), StateFilter(default_state))
+@router.message(Command(commands="add_in_category"), StateFilter(ShowIncomesCategoryState.show_category))
 async def add_income_category(message: Message, state: FSMContext):
     await message.answer(
         text=USER_LEXICON["income"]["add_income_category"],
@@ -109,7 +112,7 @@ async def set_income_category(message: Message, state: FSMContext):
     await state.clear()
 
 
-@router.message(Command(commands="add_ex_category"), StateFilter(default_state))
+@router.message(Command(commands="add_ex_category"), StateFilter(ShowExpensesCategoryState.show_category))
 async def add_expense_category(message: Message, state: FSMContext):
     await message.answer(
         text=USER_LEXICON["expense"]["add_expense_category"],
@@ -166,7 +169,7 @@ async def upd_category_name(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(StateFilter(UpdCategoryState.upd_name))
-async def set_upd_in_category_name(message: Message, state: FSMContext):
+async def set_upd_category_name(message: Message, state: FSMContext):
     data = await state.get_data()
     async with async_session() as session:
         category_id: int = data["category_id"]
@@ -175,4 +178,5 @@ async def set_upd_in_category_name(message: Message, state: FSMContext):
         await session.execute(stmt)
         await session.commit()
 
+    await state.clear()
     await message.answer(USER_LEXICON["successful_upd_category_name"])

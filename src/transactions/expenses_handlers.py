@@ -118,7 +118,7 @@ async def get_expense_info(callback: CallbackQuery, state: FSMContext):
     )
 
 
-@router.message(Command(commands="add_expense"))
+@router.message(Command(commands="add_expense"), StateFilter(default_state))
 async def select_expense_type(message: Message, state: FSMContext):
     async with async_session() as session:
         query = select(ExpenseCategory)

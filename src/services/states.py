@@ -37,12 +37,12 @@ class AddCategoryState(StatesGroup):
     set_data = State()
 
 
-class ShowIncomesCategorySate(StatesGroup):
-    pass
+class ShowIncomesCategoryState(StatesGroup):
+    show_category = State()
 
 
-class ShowExpensesCategorySate(StatesGroup):
-    pass
+class ShowExpensesCategoryState(StatesGroup):
+    show_category = State()
 
 
 class ShowIncomesState(StatesGroup):
