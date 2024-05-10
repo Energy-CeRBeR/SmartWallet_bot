@@ -8,6 +8,7 @@ from sqlalchemy import select, insert
 from src.card_operations.keyboards import create_exit_keyboard
 from src.database.database import async_session
 from src.database.models import IncomeCategory
+from src.services.services import pagination
 from src.services.states import ShowIncomesCategoryState, AddIncomeCategoryState
 from src.transactions.categories_keyboards import create_income_categories_keyboard, create_category_actions_keyboard
 from src.transactions.lexicon import LEXICON as USER_LEXICON, print_category_info
@@ -22,12 +23,22 @@ async def get_income_categories(message: Message, state: FSMContext):
         result = await session.execute(query)
         categories = result.scalars().all()
         if categories:
+            pages = len(categories) // 9 + (len(categories) % 9 != 0)
             buttons = [category for category in categories]
+
+            await state.set_state(ShowIncomesCategoryState.show_category)
+            await state.update_data(
+                page=1,
+                pages=pages
+            )
+
+            cur_buttons = pagination(buttons, 0, "next")
+
+            # Допилить функционал с переключением страниц + добавить его в модуль с расходами
             await message.answer(
                 text=USER_LEXICON["income"]["categories_list"],
-                reply_markup=create_income_categories_keyboard(buttons)
+                reply_markup=create_income_categories_keyboard(cur_buttons, 0, "next")
             )
-            await state.set_state(ShowIncomesCategoryState.show_category)
         else:
             await message.answer(USER_LEXICON["income"]["no_categories"])
 
