@@ -50,6 +50,14 @@ def create_cards_keyboard(cards: list[Card], edit=False) -> InlineKeyboardMarkup
 
 
 def create_card_actions_keyboard(card_id: int) -> InlineKeyboardMarkup:
+    incomes_button = InlineKeyboardButton(
+        text=LEXICON["incomes"],
+        callback_data=f"get_incomes{card_id}"
+    )
+    expenses_button = InlineKeyboardButton(
+        text=LEXICON["expenses"],
+        callback_data=f"get_expenses{card_id}"
+    )
     update_button = InlineKeyboardButton(
         text=LEXICON["card_update"],
         callback_data=f"upd_card{card_id}"
@@ -64,6 +72,8 @@ def create_card_actions_keyboard(card_id: int) -> InlineKeyboardMarkup:
     )
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
+            [incomes_button],
+            [expenses_button],
             [update_button],
             [delete_button],
             [back_button]
