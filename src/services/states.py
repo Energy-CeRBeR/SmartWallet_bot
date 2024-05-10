@@ -1,6 +1,10 @@
 from aiogram.fsm.state import StatesGroup, State
 
 
+class ShowCardState(StatesGroup):
+    show_card = State()
+
+
 class AddCardState(StatesGroup):
     add_type = State()
     add_name = State()
@@ -31,6 +35,14 @@ class AddCategoryState(StatesGroup):
     get_description = State()
     set_description = State()
     set_data = State()
+
+
+class ShowIncomesCategorySate(StatesGroup):
+    pass
+
+
+class ShowExpensesCategorySate(StatesGroup):
+    pass
 
 
 class ShowIncomesState(StatesGroup):

@@ -21,7 +21,7 @@ from src.transactions.categories_keyboards import (
     create_expense_categories_keyboard,
     create_category_actions_keyboard
 )
-from src.card_operations.keyboards import create_exit_show_card_keyboard
+from src.card_operations.keyboards import create_exit_show_card_keyboard, create_exit_keyboard
 
 router = Router()
 
@@ -88,7 +88,10 @@ async def show_expense_category(callback: CallbackQuery):
 
 @router.message(Command(commands="add_in_category"), StateFilter(default_state))
 async def add_income_category(message: Message, state: FSMContext):
-    await message.answer(USER_LEXICON["income"]["add_income_category"])
+    await message.answer(
+        text=USER_LEXICON["income"]["add_income_category"],
+        reply_markup=create_exit_keyboard()
+    )
     await state.set_state(AddIncomeCategoryState.add_name)
 
 
@@ -108,7 +111,10 @@ async def set_income_category(message: Message, state: FSMContext):
 
 @router.message(Command(commands="add_ex_category"), StateFilter(default_state))
 async def add_expense_category(message: Message, state: FSMContext):
-    await message.answer(USER_LEXICON["expense"]["add_expense_category"])
+    await message.answer(
+        text=USER_LEXICON["expense"]["add_expense_category"],
+        reply_markup=create_exit_keyboard()
+    )
     await state.set_state(AddExpenseCategoryState.add_name)
 
 

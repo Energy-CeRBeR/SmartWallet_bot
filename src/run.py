@@ -20,12 +20,12 @@ async def main():
     dp = Dispatcher(storage=storage)
 
     dp.include_routers(
-        user_router,
         card_router,
         categories_router,
         general_transactions_router,
         income_transactions_router,
-        expenses_transactions_router
+        expenses_transactions_router,
+        user_router
     )
 
     await bot.delete_webhook(drop_pending_updates=True)
