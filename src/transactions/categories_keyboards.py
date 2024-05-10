@@ -50,6 +50,14 @@ def create_expense_categories_keyboard(categories: list[ExpenseCategory]) -> Inl
 
 
 def create_category_actions_keyboard(category_id: int, category_type: str):
+    incomes_button = InlineKeyboardButton(
+        text=LEXICON["incomes"],
+        callback_data=f"get_incomes{category_id}"
+    )
+    expenses_button = InlineKeyboardButton(
+        text=LEXICON["expenses"],
+        callback_data=f"get_expenses{category_id}"
+    )
     update_button = InlineKeyboardButton(
         text=LEXICON["category_name_update"],
         callback_data=f"upd_category{category_type}{category_id}"
@@ -62,8 +70,11 @@ def create_category_actions_keyboard(category_id: int, category_type: str):
         text=LEXICON["back_show_categories"],
         callback_data="cancel[show_card]"
     )
+
+    transactions_button = incomes_button if category_type == "in" else expenses_button
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
+            [transactions_button],
             [update_button],
             [delete_button],
             [back_button]
