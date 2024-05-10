@@ -13,13 +13,20 @@ def create_income_categories_keyboard(categories: list[IncomeCategory]) -> Inlin
         )
         buttons.append([cur_category])
 
-    buttons.append(
-        [
-            InlineKeyboardButton(text=LEXICON["back_show_categories"], callback_data="cancel[show_card]")
-        ]
+    exit_button = InlineKeyboardButton(
+        text="Выход",
+        callback_data="exit"
+    )
+    back_page_button = InlineKeyboardButton(
+        text=LEXICON["back_page"],
+        callback_data="back_page"
+    )
+    next_page_button = InlineKeyboardButton(
+        text=LEXICON["next_page"],
+        callback_data="next_page"
     )
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[*buttons, [back_page_button, exit_button, next_page_button]])
     return keyboard
 
 

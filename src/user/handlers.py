@@ -1,17 +1,15 @@
-from aiogram.fsm.context import FSMContext
-from sqlalchemy import select, insert
-
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command, StateFilter
+from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery
+from sqlalchemy import select, insert
 
 from src.database.database import async_session
 from src.database.models import User
 from src.user.keyboards import create_stop_keyboard
-
-from src.user.lexicon import LEXICON_COMMANDS as USER_LEXICON_COMMANDS
 from src.user.lexicon import LEXICON as USER_LEXICON
+from src.user.lexicon import LEXICON_COMMANDS as USER_LEXICON_COMMANDS
 
 router = Router()
 

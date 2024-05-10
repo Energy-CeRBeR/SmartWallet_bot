@@ -24,39 +24,6 @@ from src.card_operations.keyboards import create_exit_keyboard, create_exit_show
 router = Router()
 
 
-@router.callback_query(F.data[:12] == "del_category")
-async def del_category(callback: CallbackQuery):
-    category_type = callback.data[12: 14]
-    category_id = int(callback.data[14:])
-    category = IncomeCategory if category_type == "in" else ExpenseCategory
-    async with async_session() as session:
-        to_delete = delete(category).where(category.id == category_id)
-        await session.execute(to_delete)
-        await session.commit()
-
-    await callback.message.delete()
-    await callback.message.answer(USER_LEXICON["successful_del_category"])
-
-
-@router.callback_query(F.data[:12] == "upd_category")
-async def upd_category_name(callback: CallbackQuery, state: FSMContext):
-    category_type = callback.data[12: 14]
-    category_id = int(callback.data[14:])
-    category = IncomeCategory if category_type == "in" else ExpenseCategory
-
-    await state.update_data(
-        category_type=category,
-        category_id=category_id
-    )
-
-    await state.set_state(UpdCategoryState.upd_name)
-
-    await callback.message.edit_text(
-        text=USER_LEXICON["update_category_name"],
-        reply_markup=create_exit_show_card_keyboard("exit_update")
-    )
-
-
 @router.message(StateFilter(UpdCategoryState.upd_name))
 async def set_upd_category_name(message: Message, state: FSMContext):
     data = await state.get_data()
