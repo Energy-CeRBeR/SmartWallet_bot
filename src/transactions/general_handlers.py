@@ -10,9 +10,8 @@ from src.database.models import Card, IncomeCategory, ExpenseCategory
 
 from src.services.states import AddCategoryState, UpdCategoryState
 
-from src.transactions.lexicon import (
-    LEXICON as USER_LEXICON
-)
+from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
+
 
 from src.transactions.transactions_keyboards import (
     create_select_card_keyboard,
@@ -35,7 +34,7 @@ async def set_upd_category_name(message: Message, state: FSMContext):
         await session.commit()
 
     await state.clear()
-    await message.answer(USER_LEXICON["successful_upd_category_name"])
+    await message.answer(TRANSACTIONS_LEXICON["successful_upd_category_name"])
 
 
 @router.callback_query(F.data[:11] == "select_card", StateFilter(AddCategoryState.select_card))
@@ -50,13 +49,13 @@ async def select_card(callback: CallbackQuery, state: FSMContext):
         if cards:
             buttons = [card for card in cards]
             await callback.message.edit_text(
-                text=USER_LEXICON["card_list"],
+                text=TRANSACTIONS_LEXICON["card_list"],
                 reply_markup=create_select_card_keyboard(buttons)
             )
             await state.set_state(AddCategoryState.add_amount)
 
         else:
-            await callback.message.answer(USER_LEXICON["no_cards"])
+            await callback.message.answer(TRANSACTIONS_LEXICON["no_cards"])
             await state.clear()
 
 
@@ -71,7 +70,7 @@ async def add_amount(callback: CallbackQuery, state: FSMContext):
     category_type_str = data["category_type_str"]
     transactions = "income_transactions" if category_type_str == "income" else "expense_transactions"
     await callback.message.answer(
-        text=USER_LEXICON[transactions]["amount"],
+        text=TRANSACTIONS_LEXICON[transactions]["amount"],
         reply_markup=create_exit_keyboard()
     )
 
@@ -88,14 +87,14 @@ async def add_description(message: Message, state: FSMContext):
         amount = float(message.text.strip())
         await state.update_data(amount=amount)
         await message.answer(
-            text=USER_LEXICON["description"],
+            text=TRANSACTIONS_LEXICON["description"],
             reply_markup=create_description_keyboard()
         )
         await state.set_state(AddCategoryState.get_description)
 
     except ValueError:
         await message.answer(
-            text=USER_LEXICON[transactions]["incorrect_amount"],
+            text=TRANSACTIONS_LEXICON[transactions]["incorrect_amount"],
             reply_markup=create_exit_keyboard()
         )
 
@@ -103,7 +102,7 @@ async def add_description(message: Message, state: FSMContext):
 @router.callback_query(F.data == "YES", StateFilter(AddCategoryState.get_description))
 async def get_description_from_user(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    await callback.message.answer(USER_LEXICON["get_description"])
+    await callback.message.answer(TRANSACTIONS_LEXICON["get_description"])
     await state.set_state(AddCategoryState.set_description)
 
 
@@ -112,7 +111,7 @@ async def no_description(callback: CallbackQuery, state: FSMContext):
     await state.update_data(description="")
     await state.set_state(AddCategoryState.set_data)
     await callback.message.edit_text(
-        text=USER_LEXICON["commit_transaction"],
+        text=TRANSACTIONS_LEXICON["commit_transaction"],
         reply_markup=create_done_keyboard()
     )
 
@@ -122,7 +121,7 @@ async def set_description(message: Message, state: FSMContext):
     await state.update_data(description=message.text)
     await state.set_state(AddCategoryState.set_data)
     await message.answer(
-        text=USER_LEXICON["set_description"],
+        text=TRANSACTIONS_LEXICON["set_description"],
         reply_markup=create_done_keyboard()
     )
 
@@ -155,7 +154,7 @@ async def set_transaction(callback: CallbackQuery, state: FSMContext):
 
         await state.clear()
         await callback.message.delete()
-        await callback.message.answer(text=USER_LEXICON[transactions]["income_is_create"])
+        await callback.message.answer(text=TRANSACTIONS_LEXICON[transactions]["income_is_create"])
 
 
 @router.callback_query(F.data == "exit")
@@ -167,5 +166,5 @@ async def create_exit_router(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "cancel_edit_transaction")
 async def create_cancel_edit_transaction(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    await callback.message.answer(USER_LEXICON["exit_from_edit"])
+    await callback.message.answer(TRANSACTIONS_LEXICON["exit_from_edit"])
     await state.clear()

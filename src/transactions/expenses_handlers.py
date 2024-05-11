@@ -13,7 +13,8 @@ from src.database.database import async_session
 from src.database.models import Expense, ExpenseCategory, Card
 from src.services.services import pagination, isValidDate
 from src.services.states import AddCategoryState, ShowExpensesState
-from src.transactions.lexicon import LEXICON as USER_LEXICON, LEXICON_COMMANDS as USER_LEXICON_COMMANDS
+from src.transactions.lexicon import LEXICON as USER_LEXICON, LEXICON_COMMANDS as USER_LEXICON_COMMANDS, \
+    print_expense_info
 from src.transactions.transactions_keyboards import create_expenses_keyboard, create_transaction_edit_keyboard, \
     create_select_category_keyboard, create_exit_transaction_edit_keyboard
 
@@ -106,14 +107,7 @@ async def get_expense_info(callback: CallbackQuery, state: FSMContext):
         expense_category=expense_category
     )
     await callback.message.edit_text(
-        text=(
-            f'{USER_LEXICON["expense_info"]["info"]}\n'
-            f'{USER_LEXICON["expense_info"]["category"]}: {expense_category.name}\n'
-            f'{USER_LEXICON["expense_info"]["card"]}: {card.name}\n'
-            f'{USER_LEXICON["expense_info"]["amount"]}: {expense.amount}\n'
-            f'{USER_LEXICON["expense_info"]["date"]}: {expense.date}\n'
-            f'{USER_LEXICON["expense_info"]["description"]}: {description}'
-        ),
+        text=print_expense_info(expense, card, expense_category, description),
         reply_markup=create_transaction_edit_keyboard(transaction_type="ex")
     )
 
@@ -254,7 +248,7 @@ async def set_new_expense_amount(message: Message, state: FSMContext):
 
     except ValueError:
         await message.answer(
-            text=USER_LEXICON["expense"]["incorrect_amount"],
+            text=USER_LEXICON["expense_transactions"]["incorrect_amount"],
             reply_markup=create_exit_transaction_edit_keyboard()
         )
 

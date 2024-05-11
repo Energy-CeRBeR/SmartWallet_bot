@@ -7,8 +7,19 @@ from src.database.models import Card
 def create_exit_keyboard() -> InlineKeyboardMarkup:
     back_button = InlineKeyboardButton(
         text=LEXICON["card_types"]["back"],
-        callback_data="cancel[create_card]"
+        callback_data="cancel"
     )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+
+    return keyboard
+
+
+def create_cancel_update_keyboard() -> InlineKeyboardMarkup:
+    back_button = InlineKeyboardButton(
+        text=LEXICON["exit_update"],
+        callback_data="cancel"
+    )
+
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
 
     return keyboard
@@ -17,7 +28,7 @@ def create_exit_keyboard() -> InlineKeyboardMarkup:
 def create_exit_show_card_keyboard(text: str) -> InlineKeyboardMarkup:
     back_button = InlineKeyboardButton(
         text=LEXICON[text],
-        callback_data="cancel[show_card]"
+        callback_data="exit"
     )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
@@ -35,7 +46,7 @@ def create_cards_keyboard(cards: list[Card], edit=False) -> InlineKeyboardMarkup
         buttons.append([cur_card])
 
     text = LEXICON["back_show_card"] if not edit else LEXICON["cancel_edit"]
-    callback_data = "cancel[show_card]" if not edit else "cancel[create_card]"
+    callback_data = "exit" if not edit else "cancel"
     buttons.append(
         [
             InlineKeyboardButton(
@@ -68,7 +79,7 @@ def create_card_actions_keyboard(card_id: int) -> InlineKeyboardMarkup:
     )
     back_button = InlineKeyboardButton(
         text=LEXICON["back_show_card"],
-        callback_data="cancel[show_card]"
+        callback_data="exit"
     )
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -94,7 +105,7 @@ def create_card_update_keyboard(card_id: int) -> InlineKeyboardMarkup:
     )
     back_button = InlineKeyboardButton(
         text=LEXICON["exit_update"],
-        callback_data="cancel[show_card]"
+        callback_data="cancel"
     )
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -120,7 +131,7 @@ class TypeKeyboard:
         )
         back_button = InlineKeyboardButton(
             text=LEXICON["card_types"]["back"],
-            callback_data="cancel[create_card]"
+            callback_data="cancel"
         )
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[

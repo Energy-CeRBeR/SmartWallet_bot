@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from src.transactions.lexicon import LEXICON
+from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
 from src.database.models import IncomeCategory, ExpenseCategory, Card, Income, Expense
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -9,7 +9,7 @@ from src.services.services import pagination
 
 def create_exit_transaction_edit_keyboard() -> InlineKeyboardMarkup:
     back_button = InlineKeyboardButton(
-        text=LEXICON["cancel_edit"],
+        text=TRANSACTIONS_LEXICON["cancel_edit"],
         callback_data="cancel_edit_transaction"
     )
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
@@ -27,15 +27,15 @@ def create_incomes_keyboard(incomes: list[Income]) -> InlineKeyboardMarkup:
         buttons.append([cur_income])
 
     exit_button = InlineKeyboardButton(
-        text="Выход",
+        text=TRANSACTIONS_LEXICON["exit"],
         callback_data="exit"
     )
     back_page_button = InlineKeyboardButton(
-        text=LEXICON["back_page"],
+        text=TRANSACTIONS_LEXICON["back_page"],
         callback_data="back_page"
     )
     next_page_button = InlineKeyboardButton(
-        text=LEXICON["next_page"],
+        text=TRANSACTIONS_LEXICON["next_page"],
         callback_data="next_page"
     )
 
@@ -54,15 +54,15 @@ def create_expenses_keyboard(expenses: list[Expense]) -> InlineKeyboardMarkup:
         buttons.append([cur_expense])
 
     exit_button = InlineKeyboardButton(
-        text="Выход",
+        text=TRANSACTIONS_LEXICON["exit"],
         callback_data="exit"
     )
     back_page_button = InlineKeyboardButton(
-        text=LEXICON["back_page"],
+        text=TRANSACTIONS_LEXICON["back_page"],
         callback_data="back_page"
     )
     next_page_button = InlineKeyboardButton(
-        text=LEXICON["next_page"],
+        text=TRANSACTIONS_LEXICON["next_page"],
         callback_data="next_page"
     )
 
@@ -94,7 +94,7 @@ def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMar
     )
 
     exit_button = InlineKeyboardButton(
-        text="Выход",
+        text=TRANSACTIONS_LEXICON["exit"],
         callback_data="exit"
     )
 
@@ -122,12 +122,12 @@ def create_select_category_keyboard(categories: list, edit=False) -> InlineKeybo
         )
         buttons.append([cur_category])
 
-    text = LEXICON["cancel_create"] if not edit else LEXICON["cancel_edit"]
+    text = TRANSACTIONS_LEXICON["cancel_create"] if not edit else TRANSACTIONS_LEXICON["cancel_edit"]
     buttons.append(
         [
             InlineKeyboardButton(
                 text=text,
-                callback_data="cancel[create_card]"
+                callback_data="cancel"
             )
         ]
     )
@@ -147,7 +147,7 @@ def create_select_card_keyboard(cards: list[Card]) -> InlineKeyboardMarkup:
 
     buttons.append(
         [
-            InlineKeyboardButton(text=LEXICON["cancel_create"], callback_data="cancel[show_card]")
+            InlineKeyboardButton(text=TRANSACTIONS_LEXICON["cancel_create"], callback_data="exit")
         ]
     )
 
@@ -165,8 +165,8 @@ def create_description_keyboard() -> InlineKeyboardMarkup:
         callback_data=f"NO"
     )
     back_button = InlineKeyboardButton(
-        text=LEXICON["back_show_categories"],
-        callback_data="cancel[create_card]"
+        text=TRANSACTIONS_LEXICON["back_show_categories"],
+        callback_data="cancel"
     )
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[

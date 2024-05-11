@@ -49,3 +49,10 @@ async def stop_all_process(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     await state.clear()
     await callback.message.answer(USER_LEXICON["stop_all_processes"])
+
+
+@router.callback_query(F.data == "cancel")
+async def cancel_operation(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.delete()
+    await callback.message.answer(USER_LEXICON["operation_is_cancel"])
