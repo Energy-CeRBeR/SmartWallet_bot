@@ -29,53 +29,54 @@ async def get_income_categories(message: Message, state: FSMContext):
 
             await state.set_state(ShowIncomesCategoryState.show_category)
             await state.update_data(
-                page=1,
+                page=0,
                 pages=pages,
                 in_categories=buttons
             )
 
-            cur_buttons = pagination(buttons, 0, "next")
+            cur_buttons = pagination(buttons, 0)
 
             await message.answer(
-                text=TRANSACTIONS_LEXICON["income"]["categories_list"],
+                text=f'{TRANSACTIONS_LEXICON["income"]["categories_list"]} Страница 1 / {pages}',
                 reply_markup=create_income_categories_keyboard(cur_buttons)
             )
         else:
+            await state.clear()
             await message.answer(TRANSACTIONS_LEXICON["income"]["no_categories"])
 
 
 @router.callback_query(F.data == "next_page", StateFilter(ShowIncomesCategoryState.show_category))
 async def goto_next_in_categories_page(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    cur_page = data["page"]
+    cur_page = data["page"] + 1
     in_categories = data["in_categories"]
-    buttons = pagination(in_categories, cur_page, "next")
+    buttons = pagination(in_categories, cur_page)
     pages = data["pages"]
 
-    if cur_page > 0 and buttons:
+    if 0 <= cur_page < pages and buttons:
         await callback.message.edit_text(
             text=f'{TRANSACTIONS_LEXICON["income"]["categories_list"]} Страница {cur_page + 1} / {pages}',
             reply_markup=create_income_categories_keyboard(buttons)
         )
 
-        await state.update_data(page=cur_page + 1)
+        await state.update_data(page=cur_page)
 
 
 @router.callback_query(F.data == "back_page", StateFilter(ShowIncomesCategoryState.show_category))
 async def goto_back_in_categories_page(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    cur_page = data["page"]
+    cur_page = data["page"] - 1
     in_categories = data["in_categories"]
-    buttons = pagination(in_categories, cur_page, "back")
+    buttons = pagination(in_categories, cur_page)
     pages = data["pages"]
 
-    if cur_page > 0 and buttons:
+    if 0 <= cur_page < pages and buttons:
         await callback.message.edit_text(
-            text=f'{TRANSACTIONS_LEXICON["income"]["categories_list"]} Страница {cur_page - 1} / {pages}',
+            text=f'{TRANSACTIONS_LEXICON["income"]["categories_list"]} Страница {cur_page + 1} / {pages}',
             reply_markup=create_income_categories_keyboard(buttons)
         )
 
-        await state.update_data(page=cur_page - 1)
+        await state.update_data(page=cur_page)
 
 
 @router.callback_query(F.data[:15] == "get_in_category", StateFilter(ShowIncomesCategoryState.show_category))
@@ -92,7 +93,7 @@ async def show_income_category(callback: CallbackQuery):
         )
 
 
-@router.message(Command(commands="add_in_category"), StateFilter(ShowIncomesCategoryState.show_category))
+@router.message(Command(commands="add_in_category"), StateFilter(default_state))
 async def add_income_category(message: Message, state: FSMContext):
     await message.answer(
         text=TRANSACTIONS_LEXICON["income"]["add_income_category"],
@@ -158,12 +159,12 @@ async def get_incomes(callback: CallbackQuery, state: FSMContext):
 
         await state.set_state(ShowIncomesState.show_incomes)
         await state.update_data(
-            page=1,
+            page=0,
             pages=pages,
             incomes=buttons
         )
 
-        cur_buttons = pagination(buttons, 0, "next")
+        cur_buttons = pagination(buttons, 0)
         await callback.message.edit_text(
             text=f'{TRANSACTIONS_LEXICON["income"]["incomes_list"]} Страница 1 / {pages}',
             reply_markup=create_incomes_keyboard(cur_buttons)

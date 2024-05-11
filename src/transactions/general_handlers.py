@@ -3,22 +3,21 @@ from aiogram.filters import StateFilter
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update
 
 from src.database.database import async_session
-from src.database.models import Card, IncomeCategory, ExpenseCategory
+from src.database.models import Card
 
 from src.services.states import AddCategoryState, UpdCategoryState
 
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
-
 
 from src.transactions.transactions_keyboards import (
     create_select_card_keyboard,
     create_description_keyboard,
     create_done_keyboard
 )
-from src.card_operations.keyboards import create_exit_keyboard, create_exit_show_card_keyboard
+from src.card_operations.keyboards import create_exit_keyboard
 
 router = Router()
 
@@ -43,7 +42,7 @@ async def select_card(callback: CallbackQuery, state: FSMContext):
     await state.update_data(category_id=category_id)
 
     async with async_session() as session:
-        query = select(Card)
+        query = select(Card).where(Card.tg_id == callback.from_user.id)
         result = await session.execute(query)
         cards = result.scalars().all()
         if cards:

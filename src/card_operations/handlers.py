@@ -25,7 +25,7 @@ from src.card_operations.keyboards import (
     create_cards_keyboard,
     create_card_actions_keyboard,
     create_card_update_keyboard,
-    create_exit_show_card_keyboard, create_cancel_update_keyboard
+    create_cancel_update_keyboard
 )
 from src.transactions.transactions_keyboards import create_incomes_keyboard, create_expenses_keyboard
 
@@ -46,6 +46,7 @@ async def get_cards(message: Message, state: FSMContext):
             )
             await state.set_state(ShowCardState.show_card)
         else:
+            await state.clear()
             await message.answer(CARD_OPERATIONS_LEXICON_COMMANDS[message.text]["no_cards"])
 
 
@@ -153,7 +154,7 @@ async def del_card(callback: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data[:8] == "upd_card", StateFilter(ShowCardState.show_card))
-async def upd_card(callback: CallbackQuery, state: FSMContext):
+async def upd_card(callback: CallbackQuery):
     card_id = int(callback.data[8:])
     await callback.message.edit_text(
         text=CARD_OPERATIONS_LEXICON["update_elem_in_card"],
@@ -235,12 +236,12 @@ async def get_incomes(callback: CallbackQuery, state: FSMContext):
 
         await state.set_state(ShowIncomesState.show_incomes)
         await state.update_data(
-            page=1,
+            page=0,
             pages=pages,
             incomes=buttons
         )
 
-        cur_buttons = pagination(buttons, 0, "next")
+        cur_buttons = pagination(buttons, 0)
 
         await callback.message.edit_text(
             text=f'{TRANSACTIONS_LEXICON["income"]["incomes_list"]} Страница 1 / {pages}',
@@ -267,12 +268,12 @@ async def get_expenses(callback: CallbackQuery, state: FSMContext):
 
         await state.set_state(ShowExpensesState.show_expenses)
         await state.update_data(
-            page=1,
+            page=0,
             pages=pages,
             expenses=buttons
         )
 
-        cur_buttons = pagination(buttons, 0, "next")
+        cur_buttons = pagination(buttons, 0)
 
         await callback.message.edit_text(
             text=f'{TRANSACTIONS_LEXICON["expense"]["expenses_list"]} Страница 1 / {pages}',
