@@ -1,10 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
-from src.database.models import IncomeCategory, ExpenseCategory, Card, Income, Expense
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-from src.services.services import pagination
+from src.database.models import Card, Income, Expense
 
 
 def create_exit_transaction_edit_keyboard() -> InlineKeyboardMarkup:

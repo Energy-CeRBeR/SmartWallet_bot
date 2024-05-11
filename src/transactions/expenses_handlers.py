@@ -35,53 +35,54 @@ async def get_expenses(message: Message, state: FSMContext):
 
         await state.set_state(ShowExpensesState.show_expenses)
         await state.update_data(
-            page=1,
+            page=0,
             pages=pages,
             expenses=buttons
         )
 
-        cur_buttons = pagination(buttons, 0, "next")
+        cur_buttons = pagination(buttons, 0)
 
         await message.answer(
             text=f'{USER_LEXICON["expense"]["expenses_list"]}. Страница 1 / {pages}',
             reply_markup=create_expenses_keyboard(cur_buttons)
         )
     else:
+        await state.clear()
         await message.answer(USER_LEXICON["expense_transactions"]["no_expenses"])
 
 
 @router.callback_query(F.data == "next_page", StateFilter(ShowExpensesState.show_expenses))
 async def goto_next_expenses_page(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    cur_page = data["page"]
+    cur_page = data["page"] + 1
     expenses = data["expenses"]
-    buttons = pagination(expenses, cur_page, "next")
+    buttons = pagination(expenses, cur_page)
     pages = data["pages"]
 
-    if cur_page > 0 and buttons:
+    if 0 <= cur_page < pages and buttons:
         await callback.message.edit_text(
             text=f'{USER_LEXICON["expense"]["expenses_list"]} Страница {cur_page + 1} / {pages}',
             reply_markup=create_expenses_keyboard(buttons)
         )
 
-        await state.update_data(page=cur_page + 1)
+        await state.update_data(page=cur_page)
 
 
 @router.callback_query(F.data == "back_page", StateFilter(ShowExpensesState.show_expenses))
 async def goto_back_expenses_page(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    cur_page = data["page"]
+    cur_page = data["page"] - 1
     expenses = data["expenses"]
-    buttons = pagination(expenses, cur_page, "back")
+    buttons = pagination(expenses, cur_page)
     pages = data["pages"]
 
-    if cur_page > 0 and buttons:
+    if 0 <= cur_page < pages and buttons:
         await callback.message.edit_text(
-            text=f'{USER_LEXICON["expense"]["expenses_list"]} Страница {cur_page - 1} / {pages}',
+            text=f'{USER_LEXICON["expense"]["expenses_list"]} Страница {cur_page + 1} / {pages}',
             reply_markup=create_expenses_keyboard(buttons)
         )
 
-        await state.update_data(page=cur_page - 1)
+        await state.update_data(page=cur_page)
 
 
 @router.callback_query(F.data[:11] == "get_expense", StateFilter(ShowExpensesState.show_expenses))

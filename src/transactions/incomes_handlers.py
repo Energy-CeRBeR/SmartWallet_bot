@@ -35,53 +35,54 @@ async def get_incomes(message: Message, state: FSMContext):
 
         await state.set_state(ShowIncomesState.show_incomes)
         await state.update_data(
-            page=1,
+            page=0,
             pages=pages,
             incomes=buttons
         )
 
-        cur_buttons = pagination(buttons, 0, "next")
+        cur_buttons = pagination(buttons, 0)
 
         await message.answer(
             text=f'{USER_LEXICON["income"]["incomes_list"]} Страница 1 / {pages}',
             reply_markup=create_incomes_keyboard(cur_buttons)
         )
     else:
+        await state.clear()
         await message.answer(USER_LEXICON["income_transactions"]["no_incomes"])
 
 
 @router.callback_query(F.data == "next_page", StateFilter(ShowIncomesState.show_incomes))
 async def goto_next_incomes_page(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    cur_page = data["page"]
+    cur_page = data["page"] + 1
     incomes = data["incomes"]
-    buttons = pagination(incomes, cur_page, "next")
+    buttons = pagination(incomes, cur_page)
     pages = data["pages"]
 
-    if cur_page > 0 and buttons:
+    if 0 <= cur_page < pages and buttons:
         await callback.message.edit_text(
             text=f'{USER_LEXICON["income"]["incomes_list"]} Страница {cur_page + 1} / {pages}',
             reply_markup=create_incomes_keyboard(buttons)
         )
 
-        await state.update_data(page=cur_page + 1)
+        await state.update_data(page=cur_page)
 
 
 @router.callback_query(F.data == "back_page", StateFilter(ShowIncomesState.show_incomes))
 async def goto_back_incomes_page(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    cur_page = data["page"]
+    cur_page = data["page"] - 1
     incomes = data["incomes"]
-    buttons = pagination(incomes, cur_page, "back")
+    buttons = pagination(incomes, cur_page)
     pages = data["pages"]
 
-    if cur_page > 0 and buttons:
+    if 0 <= cur_page < pages and buttons:
         await callback.message.edit_text(
-            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница {cur_page - 1} / {pages}',
+            text=f'{USER_LEXICON["income"]["incomes_list"]} Страница {cur_page + 1} / {pages}',
             reply_markup=create_incomes_keyboard(buttons)
         )
 
-        await state.update_data(page=cur_page - 1)
+        await state.update_data(page=cur_page)
 
 
 @router.callback_query(F.data[:10] == "get_income", StateFilter(ShowIncomesState.show_incomes))
