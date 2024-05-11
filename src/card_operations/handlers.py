@@ -94,9 +94,9 @@ async def create_name(callback: CallbackQuery, state: FSMContext):
     await state.set_state(AddCardState.add_name)
 
 
-@router.callback_query(StateFilter(AddCardState.add_type))
-async def error_card_type(message: Message):
-    await message.answer(CARD_OPERATIONS_LEXICON["card_types"]["incorrect_action"])
+# @router.callback_query(StateFilter(AddCardState.add_type))
+# async def error_card_type(message: Message):
+#     await message.answer(CARD_OPERATIONS_LEXICON["card_types"]["incorrect_action"])
 
 
 @router.message(StateFilter(AddCardState.add_name))
