@@ -16,7 +16,7 @@ from src.transactions.expenses_handlers import router as expenses_transactions_r
 
 async def main():
     config: Config = load_config(".env")
-    bot = Bot(token=config.tg_bot.token)
+    bot = Bot(token=config.tg_bot.token, parse_mode="HTML")
     storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
 
