@@ -20,17 +20,15 @@ async def start_bot(message: Message):
         query = select(User).where(User.tg_id == message.from_user.id)
         result = await session.execute(query)
         user = result.mappings().all()
-        if user:
-            await message.answer(USER_LEXICON_COMMANDS[message.text]["old_user"])
-        else:
+        if not user:
             stmt = insert(User).values(
                 tg_id=message.from_user.id,
                 first_name=message.from_user.first_name
             )
-
             await session.execute(stmt)
             await session.commit()
-            await message.answer(USER_LEXICON_COMMANDS[message.text]["new_user"])
+
+        await message.answer(USER_LEXICON_COMMANDS[message.text])
 
 
 @router.message(Command(commands="help"), StateFilter(default_state))
