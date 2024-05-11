@@ -13,7 +13,8 @@ from src.database.database import async_session
 from src.database.models import Income, IncomeCategory, Card
 from src.services.services import pagination, isValidDate
 from src.services.states import ShowIncomesState, AddCategoryState
-from src.transactions.lexicon import LEXICON as USER_LEXICON, LEXICON_COMMANDS as USER_LEXICON_COMMANDS
+from src.transactions.lexicon import LEXICON as USER_LEXICON, LEXICON_COMMANDS as USER_LEXICON_COMMANDS, \
+    print_income_info
 from src.transactions.transactions_keyboards import create_incomes_keyboard, create_transaction_edit_keyboard, \
     create_select_category_keyboard, create_exit_transaction_edit_keyboard
 
@@ -106,14 +107,7 @@ async def get_income_info(callback: CallbackQuery, state: FSMContext):
         income_category=income_category
     )
     await callback.message.edit_text(
-        text=(
-            f'{USER_LEXICON["income_info"]["info"]}\n'
-            f'{USER_LEXICON["income_info"]["category"]}: {income_category.name}\n'
-            f'{USER_LEXICON["income_info"]["card"]}: {card.name}\n'
-            f'{USER_LEXICON["income_info"]["amount"]}: {income.amount}\n'
-            f'{USER_LEXICON["income_info"]["date"]}: {income.date}\n'
-            f'{USER_LEXICON["income_info"]["description"]}: {description}'
-        ),
+        text=print_income_info(income, income_category, card, description),
         reply_markup=create_transaction_edit_keyboard(transaction_type="in")
     )
 
@@ -254,7 +248,7 @@ async def set_new_income_amount(message: Message, state: FSMContext):
 
     except ValueError:
         await message.answer(
-            text=USER_LEXICON["income"]["incorrect_amount"],
+            text=USER_LEXICON["income_transactions"]["incorrect_amount"],
             reply_markup=create_exit_transaction_edit_keyboard()
         )
 

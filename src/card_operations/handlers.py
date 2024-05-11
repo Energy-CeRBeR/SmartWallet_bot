@@ -25,7 +25,7 @@ from src.card_operations.keyboards import (
     create_cards_keyboard,
     create_card_actions_keyboard,
     create_card_update_keyboard,
-    create_exit_show_card_keyboard
+    create_exit_show_card_keyboard, create_cancel_update_keyboard
 )
 from src.transactions.transactions_keyboards import create_incomes_keyboard, create_expenses_keyboard
 
@@ -71,14 +71,6 @@ async def create_type(message: Message, state: FSMContext):
     )
 
     await state.set_state(AddCardState.add_type)
-
-
-@router.callback_query(F.data[:6] == "cancel")
-async def cancel_operation(callback: CallbackQuery, state: FSMContext):
-    await state.clear()
-    await callback.message.delete()
-    if len(CARD_OPERATIONS_LEXICON[callback.data]) > 0:
-        await callback.message.answer(CARD_OPERATIONS_LEXICON[callback.data])
 
 
 @router.callback_query(F.data == "credit_card", StateFilter(AddCardState.add_type))
@@ -178,7 +170,7 @@ async def upd_card_name(callback: CallbackQuery, state: FSMContext):
 
     await callback.message.edit_text(
         text=CARD_OPERATIONS_LEXICON["update_card_name"]["name"],
-        reply_markup=create_exit_show_card_keyboard("exit_update")
+        reply_markup=create_cancel_update_keyboard()
     )
 
 
@@ -203,7 +195,7 @@ async def upd_card_balance(callback: CallbackQuery, state: FSMContext):
     await state.set_state(UpdCardState.upd_balance)
     await callback.message.edit_text(
         text=CARD_OPERATIONS_LEXICON["update_card_balance"]["balance"],
-        reply_markup=create_exit_show_card_keyboard("exit_update")
+        reply_markup=create_cancel_update_keyboard()
     )
 
 
