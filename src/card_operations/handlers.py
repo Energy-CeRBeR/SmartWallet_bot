@@ -84,7 +84,10 @@ async def cancel_operation(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "credit_card", StateFilter(AddCardState.add_type))
 async def temp_function_for_credit_card(callback: CallbackQuery):
     await callback.message.delete()
-    await callback.message.answer("Данный тип карт в разработке!")
+    await callback.message.answer(
+        text=CARD_OPERATIONS_LEXICON["no_credit_card"],
+        reply_markup=create_exit_keyboard()
+    )
 
 
 @router.callback_query(F.data == "debit_card", StateFilter(AddCardState.add_type))
@@ -138,7 +141,10 @@ async def set_card_balance(message: Message, state: FSMContext):
         await message.answer(text=CARD_OPERATIONS_LEXICON["card_is_create"])
 
     except ValueError:
-        await message.answer(CARD_OPERATIONS_LEXICON["card_balance"]["incorrect_balance"])
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON["card_balance"]["incorrect_balance"],
+            reply_markup=create_exit_keyboard()
+        )
 
 
 @router.callback_query(F.data[:8] == "del_card", StateFilter(ShowCardState.show_card))
@@ -161,7 +167,6 @@ async def upd_card(callback: CallbackQuery, state: FSMContext):
         text=CARD_OPERATIONS_LEXICON["update_elem_in_card"],
         reply_markup=create_card_update_keyboard(card_id)
     )
-    await state.clear()
 
 
 @router.callback_query(F.data[:8] == "upd_name", StateFilter(ShowCardState.show_card))
@@ -177,7 +182,7 @@ async def upd_card_name(callback: CallbackQuery, state: FSMContext):
     )
 
 
-@router.message(StateFilter(UpdCardState.upd_name), ShowCardState.show_card)
+@router.message(StateFilter(UpdCardState.upd_name))
 async def set_upd_card_name(message: Message, state: FSMContext):
     data = await state.get_data()
     async with async_session() as session:
@@ -217,7 +222,10 @@ async def set_upd_card_balance(message: Message, state: FSMContext):
         await state.clear()
 
     except ValueError:
-        await message.answer(CARD_OPERATIONS_LEXICON["update_card_balance"]["incorrect_balance"])
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON["update_card_balance"]["incorrect_balance"],
+            reply_markup=create_exit_keyboard()
+        )
 
 
 @router.callback_query(F.data[:11] == "get_incomes", StateFilter(ShowCardState.show_card))
