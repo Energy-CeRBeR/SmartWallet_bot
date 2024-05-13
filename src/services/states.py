@@ -31,6 +31,8 @@ class UpdCategoryState(StatesGroup):
 class AddIncomeState(StatesGroup):
     select_category = State()
     select_card = State()
+    add_date = State()
+    set_date = State()
     add_amount = State()
     add_description = State()
     get_description = State()
@@ -41,21 +43,13 @@ class AddIncomeState(StatesGroup):
 class AddExpenseState(StatesGroup):
     select_category = State()
     select_card = State()
+    add_date = State()
+    set_date = State()
     add_amount = State()
     add_description = State()
     get_description = State()
     set_description = State()
     set_data = State()
-
-
-# class AddTransactionState(StatesGroup):
-#     select_category = State()
-#     select_card = State()
-#     add_amount = State()
-#     add_description = State()
-#     get_description = State()
-#     set_description = State()
-#     set_data = State()
 
 
 class ShowIncomesCategoryState(StatesGroup):

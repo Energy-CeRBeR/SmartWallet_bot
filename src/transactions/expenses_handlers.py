@@ -17,7 +17,7 @@ from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, \
     LEXICON_COMMANDS as TRANSACTION_LEXICON_COMMANDS, print_expense_info
 from src.transactions.transactions_keyboards import create_expenses_keyboard, create_transaction_edit_keyboard, \
     create_select_category_keyboard, create_exit_transaction_edit_keyboard, create_select_card_keyboard, \
-    create_description_keyboard, create_done_keyboard
+    create_yes_no_keyboard, create_done_keyboard
 
 router = Router()
 
@@ -192,29 +192,63 @@ async def select_card(callback: CallbackQuery, state: FSMContext):
                 text=TRANSACTIONS_LEXICON["card_list"],
                 reply_markup=create_select_card_keyboard(buttons)
             )
-            await state.set_state(AddExpenseState.add_amount)
+            await state.set_state(AddExpenseState.add_date)
 
         else:
             await callback.message.answer(TRANSACTIONS_LEXICON["no_cards"])
             await state.clear()
 
 
-@router.callback_query(F.data[:10] == "add_amount", StateFilter(AddExpenseState.add_amount))
-async def add_amount(callback: CallbackQuery, state: FSMContext):
-    card_id = int(callback.data[10:])
+@router.callback_query(F.data[:8] == "add_date", StateFilter(AddExpenseState.add_date))
+async def yes_no_add_card(callback: CallbackQuery, state: FSMContext):
+    card_id = int(callback.data[8:])
     await state.update_data(card_id=card_id)
+    await callback.message.edit_text(
+        text=TRANSACTIONS_LEXICON["add_date"],
+        reply_markup=create_yes_no_keyboard()
+    )
 
-    await callback.message.delete()
 
+@router.callback_query(F.data == "YES", StateFilter(AddExpenseState.add_date))
+async def get_date(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(AddExpenseState.add_amount)
+    await callback.message.edit_text(
+        text=TRANSACTIONS_LEXICON["get_date"],
+        reply_markup=create_exit_keyboard()
+    )
+
+
+@router.callback_query(F.data == "NO", StateFilter(AddExpenseState.add_date))
+async def no_add_date(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     category_type_str = data["category_type_str"]
-    transactions = "expense_transactions" if category_type_str == "expense" else "expense_transactions"
+    transactions = "income_transactions" if category_type_str == "income" else "expense_transactions"
     await callback.message.answer(
         text=TRANSACTIONS_LEXICON[transactions]["amount"],
         reply_markup=create_exit_keyboard()
     )
-
     await state.set_state(AddExpenseState.add_description)
+
+
+@router.message(StateFilter(AddExpenseState.add_amount))
+async def add_amount(message: Message, state: FSMContext):
+    date = message.text.strip()
+    if isValidDate(date):
+        await state.update_data(date=date)
+        data = await state.get_data()
+        category_type_str = data["category_type_str"]
+        transactions = "income_transactions" if category_type_str == "income" else "expense_transactions"
+        await message.answer(
+            text=TRANSACTIONS_LEXICON[transactions]["amount"],
+            reply_markup=create_exit_keyboard()
+        )
+        await state.set_state(AddExpenseState.add_description)
+
+    else:
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["incorrect_date"],
+            reply_markup=create_exit_transaction_edit_keyboard()
+        )
 
 
 @router.message(StateFilter(AddExpenseState.add_description))
@@ -228,7 +262,7 @@ async def add_description(message: Message, state: FSMContext):
         await state.update_data(amount=amount)
         await message.answer(
             text=TRANSACTIONS_LEXICON["description"],
-            reply_markup=create_description_keyboard()
+            reply_markup=create_yes_no_keyboard()
         )
         await state.set_state(AddExpenseState.get_description)
 
@@ -275,13 +309,24 @@ async def set_transaction(callback: CallbackQuery, state: FSMContext):
     category_type = data["category_type"]
 
     async with async_session() as session:
-        stmt = insert(category_type).values(
-            tg_id=callback.from_user.id,
-            category_id=data["category_id"],
-            card_id=data["card_id"],
-            amount=amount,
-            description=data["description"]
-        )
+        if "date" in data:
+            date = datetime.strptime(data["date"], '%d.%m.%Y').date()
+            stmt = insert(category_type).values(
+                tg_id=callback.from_user.id,
+                category_id=data["category_id"],
+                card_id=data["card_id"],
+                date=date,
+                amount=amount,
+                description=data["description"]
+            )
+        else:
+            stmt = insert(category_type).values(
+                tg_id=callback.from_user.id,
+                category_id=data["category_id"],
+                card_id=data["card_id"],
+                amount=amount,
+                description=data["description"]
+            )
 
         card_update = update(Card).where(
             Card.id == data["card_id"]).values(

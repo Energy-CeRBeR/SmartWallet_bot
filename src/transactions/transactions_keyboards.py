@@ -143,7 +143,7 @@ def create_select_card_keyboard(cards: list[Card]) -> InlineKeyboardMarkup:
     for card in cards:
         cur_card = InlineKeyboardButton(
             text=card.name,
-            callback_data=f"add_amount{card.id}"
+            callback_data=f"add_date{card.id}"
         )
         buttons.append([cur_card])
 
@@ -157,7 +157,7 @@ def create_select_card_keyboard(cards: list[Card]) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def create_description_keyboard() -> InlineKeyboardMarkup:
+def create_yes_no_keyboard() -> InlineKeyboardMarkup:
     yes_button = InlineKeyboardButton(
         text="Да",
         callback_data=f"YES"
@@ -167,7 +167,7 @@ def create_description_keyboard() -> InlineKeyboardMarkup:
         callback_data=f"NO"
     )
     back_button = InlineKeyboardButton(
-        text=TRANSACTIONS_LEXICON["back_show_categories"],
+        text=TRANSACTIONS_LEXICON["cancel_create"],
         callback_data="cancel"
     )
     keyboard = InlineKeyboardMarkup(
