@@ -120,16 +120,21 @@ def create_select_category_keyboard(categories: list, edit=False) -> InlineKeybo
         buttons.append([cur_category])
 
     text = TRANSACTIONS_LEXICON["cancel_create"] if not edit else TRANSACTIONS_LEXICON["cancel_edit"]
-    buttons.append(
-        [
-            InlineKeyboardButton(
-                text=text,
-                callback_data="cancel"
-            )
-        ]
+
+    exit_button = InlineKeyboardButton(
+        text=text,
+        callback_data="cancel"
+    )
+    back_page_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["back_page"],
+        callback_data="back_page"
+    )
+    next_page_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["next_page"],
+        callback_data="next_page"
     )
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[*buttons, [back_page_button, exit_button, next_page_button]])
     return keyboard
 
 
@@ -138,7 +143,7 @@ def create_select_card_keyboard(cards: list[Card]) -> InlineKeyboardMarkup:
     for card in cards:
         cur_card = InlineKeyboardButton(
             text=card.name,
-            callback_data=f"add_amount{card.id}"
+            callback_data=f"add_date{card.id}"
         )
         buttons.append([cur_card])
 
@@ -152,7 +157,7 @@ def create_select_card_keyboard(cards: list[Card]) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def create_description_keyboard() -> InlineKeyboardMarkup:
+def create_yes_no_keyboard() -> InlineKeyboardMarkup:
     yes_button = InlineKeyboardButton(
         text="Да",
         callback_data=f"YES"
@@ -162,7 +167,7 @@ def create_description_keyboard() -> InlineKeyboardMarkup:
         callback_data=f"NO"
     )
     back_button = InlineKeyboardButton(
-        text=TRANSACTIONS_LEXICON["back_show_categories"],
+        text=TRANSACTIONS_LEXICON["cancel_create"],
         callback_data="cancel"
     )
     keyboard = InlineKeyboardMarkup(
