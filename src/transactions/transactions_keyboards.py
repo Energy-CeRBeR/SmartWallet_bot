@@ -120,16 +120,21 @@ def create_select_category_keyboard(categories: list, edit=False) -> InlineKeybo
         buttons.append([cur_category])
 
     text = TRANSACTIONS_LEXICON["cancel_create"] if not edit else TRANSACTIONS_LEXICON["cancel_edit"]
-    buttons.append(
-        [
-            InlineKeyboardButton(
-                text=text,
-                callback_data="cancel"
-            )
-        ]
+
+    exit_button = InlineKeyboardButton(
+        text=text,
+        callback_data="cancel"
+    )
+    back_page_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["back_page"],
+        callback_data="back_page"
+    )
+    next_page_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["next_page"],
+        callback_data="next_page"
     )
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[*buttons, [back_page_button, exit_button, next_page_button]])
     return keyboard
 
 
