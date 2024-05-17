@@ -223,7 +223,7 @@ async def no_add_date(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     category_type_str = data["category_type_str"]
     transactions = "income_transactions" if category_type_str == "income" else "expense_transactions"
-    await callback.message.answer(
+    await callback.message.edit_text(
         text=TRANSACTIONS_LEXICON[transactions]["amount"],
         reply_markup=create_exit_keyboard()
     )
