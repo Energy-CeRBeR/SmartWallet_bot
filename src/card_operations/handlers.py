@@ -44,12 +44,33 @@ async def get_cards(message: Message, state: FSMContext):
                 text=CARD_OPERATIONS_LEXICON_COMMANDS[message.text]["card_list"],
                 reply_markup=create_cards_keyboard(buttons)
             )
-            # await state.set_state(ShowCardState.show_card)
+            await state.set_state(ShowCardState.show_card)
         else:
             await state.clear()
             await message.answer(CARD_OPERATIONS_LEXICON_COMMANDS[message.text]["no_cards"])
 
 
+@router.callback_query(F.data == "show_cards_list", StateFilter(default_state))
+@router.callback_query(F.data == "show_cards_list", StateFilter(ShowCardState.show_card))
+async def get_cards(callback: CallbackQuery, state: FSMContext):
+    async with async_session() as session:
+        query = select(Card).where(Card.tg_id == callback.from_user.id)
+        result = await session.execute(query)
+        cards = result.scalars().all()
+        if cards:
+            buttons = [card for card in cards]
+            await callback.message.edit_text(
+                text=CARD_OPERATIONS_LEXICON_COMMANDS["/cards"]["card_list"],
+                reply_markup=create_cards_keyboard(buttons)
+            )
+            await state.set_state(ShowCardState.show_card)
+        else:
+            await state.clear()
+            await callback.message.delete()
+            await callback.message.answer(CARD_OPERATIONS_LEXICON_COMMANDS[callback.message.text]["no_cards"])
+
+
+@router.callback_query(F.data[:8] == "get_card", StateFilter(ShowCardState.show_card))
 @router.callback_query(F.data[:8] == "get_card", StateFilter(default_state))
 async def show_card(callback: CallbackQuery, state: FSMContext):
     card_id = int(callback.data[8:])
@@ -139,7 +160,6 @@ async def set_card(message: Message, state: FSMContext):
             query = select(Card).where(Card.tg_id == message.from_user.id)
             result = await session.execute(query)
             current_card = result.scalars().all()[-1]
-            print(current_card.id, "IDDDDDDD")
 
         await message.answer(
             text=CARD_OPERATIONS_LEXICON["card_is_create"],

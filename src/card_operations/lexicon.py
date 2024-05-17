@@ -53,8 +53,8 @@ CARD_OPERATIONS_LEXICON: dict = {
     "get_cards_list": "Просмотреть список карт",
     "incomes": "Список доходов",
     "expenses": "Список расходов",
-    "card_is_create": "✅ Ваша карта успешно создана!\n"
-                      "/cards для просмотра списка всех карт",
+    "card_is_create": "✅ Ваша карта успешно создана!",
+    "goto_cards_list": "Вернуться к списку карт",
     "back_show_card": "❌ Выйти из просмотра ❌",
     "exit_update": "❌ Отменить обновление ❌",
     "cancel[show_card]": "",

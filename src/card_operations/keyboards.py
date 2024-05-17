@@ -44,7 +44,7 @@ def card_is_create_keyboard(card: Card) -> InlineKeyboardMarkup:
 
     cards_list_button = InlineKeyboardButton(
         text=CARD_OPERATIONS_LEXICON["get_cards_list"],
-        callback_data="get_cards_list"
+        callback_data="show_cards_list"
     )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[current_card_button], [cards_list_button]])
@@ -93,6 +93,10 @@ def create_card_actions_keyboard(card_id: int) -> InlineKeyboardMarkup:
         text=CARD_OPERATIONS_LEXICON["card_delete"],
         callback_data=f"del_card{card_id}"
     )
+    cards_list_button = InlineKeyboardButton(
+        text=CARD_OPERATIONS_LEXICON["goto_cards_list"],
+        callback_data="show_cards_list"
+    )
     back_button = InlineKeyboardButton(
         text=CARD_OPERATIONS_LEXICON["back_show_card"],
         callback_data="exit"
@@ -103,6 +107,7 @@ def create_card_actions_keyboard(card_id: int) -> InlineKeyboardMarkup:
             [expenses_button],
             [update_button],
             [delete_button],
+            [cards_list_button],
             [back_button]
         ]
     )
