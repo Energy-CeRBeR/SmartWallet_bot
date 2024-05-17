@@ -13,7 +13,7 @@ def print_card_info(card: Card) -> str:
     return text
 
 
-LEXICON: dict = {
+CARD_OPERATIONS_LEXICON: dict = {
     "card_types": {
         "debit_card": "Дебетовая карта",
         "credit_card": "Кредитная карта",
@@ -49,6 +49,8 @@ LEXICON: dict = {
         "type": "Тип карты",
         "balance": "Баланс карты"
     },
+    "get_current_card": "Просмотреть созданную карту",
+    "get_cards_list": "Просмотреть список карт",
     "incomes": "Список доходов",
     "expenses": "Список расходов",
     "card_is_create": "✅ Ваша карта успешно создана!\n"
