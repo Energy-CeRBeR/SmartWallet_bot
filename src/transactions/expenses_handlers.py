@@ -11,7 +11,7 @@ from sqlalchemy import select, update, insert
 from src.card_operations.keyboards import create_cards_keyboard, create_exit_keyboard
 from src.database.database import async_session
 from src.database.models import Expense, ExpenseCategory, Card
-from src.services.services import pagination, isValidDate
+from src.services.services import pagination, isValidDate, isValidDescription
 from src.services.states import AddExpenseState, ShowExpensesState
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, \
     LEXICON_COMMANDS as TRANSACTION_LEXICON_COMMANDS, print_expense_info
@@ -223,7 +223,7 @@ async def no_add_date(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     category_type_str = data["category_type_str"]
     transactions = "income_transactions" if category_type_str == "income" else "expense_transactions"
-    await callback.message.answer(
+    await callback.message.edit_text(
         text=TRANSACTIONS_LEXICON[transactions]["amount"],
         reply_markup=create_exit_keyboard()
     )
@@ -292,12 +292,20 @@ async def no_description(callback: CallbackQuery, state: FSMContext):
 
 @router.message(StateFilter(AddExpenseState.set_description))
 async def set_description(message: Message, state: FSMContext):
-    await state.update_data(description=message.text)
-    await state.set_state(AddExpenseState.set_data)
-    await message.answer(
-        text=TRANSACTIONS_LEXICON["set_description"],
-        reply_markup=create_done_keyboard()
-    )
+    description = message.text.strip()
+    if isValidDescription(description):
+        await state.update_data(description=description)
+        await state.set_state(AddExpenseState.set_data)
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["set_description"],
+            reply_markup=create_done_keyboard()
+        )
+
+    else:
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["incorrect_description"],
+            reply_markup=create_exit_keyboard()
+        )
 
 
 @router.callback_query(F.data == "commit_transaction", StateFilter(AddExpenseState.set_data))
@@ -503,12 +511,20 @@ async def edit_expense_description(callback: CallbackQuery, state: FSMContext):
 
 @router.message(StateFilter(ShowExpensesState.set_new_description))
 async def set_new_expense_description(message: Message, state: FSMContext):
-    data = await state.get_data()
-    expense = data["expense"]
-    async with async_session() as session:
-        stmt = update(Expense).where(Expense.id == expense.id).values(description=message.text)
-        await session.execute(stmt)
-        await session.commit()
+    description = message.text.strip()
+    if isValidDescription(description):
+        data = await state.get_data()
+        expense = data["expense"]
+        async with async_session() as session:
+            stmt = update(Expense).where(Expense.id == expense.id).values(description=description)
+            await session.execute(stmt)
+            await session.commit()
 
-    await state.set_state(ShowExpensesState.show_expenses)
-    await message.answer(TRANSACTIONS_LEXICON["edit_expense"]["description_is_update"])
+        await state.set_state(ShowExpensesState.show_expenses)
+        await message.answer(TRANSACTIONS_LEXICON["edit_expense"]["description_is_update"])
+
+    else:
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["incorrect_description"],
+            reply_markup=create_exit_transaction_edit_keyboard()
+        )

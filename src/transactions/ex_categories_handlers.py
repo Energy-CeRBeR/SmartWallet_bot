@@ -8,7 +8,7 @@ from sqlalchemy import select, insert, delete
 from src.card_operations.keyboards import create_exit_keyboard, create_exit_show_card_keyboard
 from src.database.database import async_session
 from src.database.models import ExpenseCategory, Expense
-from src.services.services import pagination
+from src.services.services import pagination, isValidName
 from src.services.states import ShowExpensesCategoryState, AddExpenseCategoryState, UpdCategoryState, ShowExpensesState
 from src.transactions.categories_keyboards import create_expense_categories_keyboard, create_category_actions_keyboard
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, print_category_info
@@ -104,16 +104,24 @@ async def add_expense_category(message: Message, state: FSMContext):
 
 @router.message(StateFilter(AddExpenseCategoryState.add_name))
 async def set_expense_category(message: Message, state: FSMContext):
-    async with async_session() as session:
-        stmt = insert(ExpenseCategory).values(
-            name=message.text,
-            tg_id=message.from_user.id
-        )
-        await session.execute(stmt)
-        await session.commit()
+    category_name = message.text.strip()
+    if isValidName(category_name):
+        async with async_session() as session:
+            stmt = insert(ExpenseCategory).values(
+                name=category_name,
+                tg_id=message.from_user.id
+            )
+            await session.execute(stmt)
+            await session.commit()
 
-    await message.answer(TRANSACTIONS_LEXICON["expense"]["category_is_create"])
-    await state.clear()
+        await message.answer(TRANSACTIONS_LEXICON["expense"]["category_is_create"])
+        await state.clear()
+
+    else:
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["expense"]["incorrect_name"],
+            reply_markup=create_exit_keyboard()
+        )
 
 
 @router.callback_query(F.data[:12] == "del_category", StateFilter(ShowExpensesCategoryState.show_category))
