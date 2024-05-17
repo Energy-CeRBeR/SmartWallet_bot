@@ -8,7 +8,7 @@ from sqlalchemy import select, insert, delete
 from src.card_operations.keyboards import create_exit_keyboard, create_exit_show_card_keyboard
 from src.database.database import async_session
 from src.database.models import IncomeCategory, Income
-from src.services.services import pagination
+from src.services.services import pagination, isValidName
 from src.services.states import ShowIncomesCategoryState, AddIncomeCategoryState, UpdCategoryState, ShowIncomesState
 from src.transactions.categories_keyboards import create_income_categories_keyboard, create_category_actions_keyboard
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, print_category_info
@@ -104,16 +104,24 @@ async def add_income_category(message: Message, state: FSMContext):
 
 @router.message(StateFilter(AddIncomeCategoryState.add_name))
 async def set_income_category(message: Message, state: FSMContext):
-    async with async_session() as session:
-        stmt = insert(IncomeCategory).values(
-            name=message.text,
-            tg_id=message.from_user.id
-        )
-        await session.execute(stmt)
-        await session.commit()
+    category_name = message.text.strip()
+    if isValidName(category_name):
+        async with async_session() as session:
+            stmt = insert(IncomeCategory).values(
+                name=category_name,
+                tg_id=message.from_user.id
+            )
+            await session.execute(stmt)
+            await session.commit()
 
-    await message.answer(TRANSACTIONS_LEXICON["income"]["category_is_create"])
-    await state.clear()
+        await message.answer(TRANSACTIONS_LEXICON["income"]["category_is_create"])
+        await state.clear()
+
+    else:
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["income"]["incorrect_name"],
+            reply_markup=create_exit_keyboard()
+        )
 
 
 @router.callback_query(F.data[:12] == "del_category", StateFilter(ShowIncomesCategoryState.show_category))

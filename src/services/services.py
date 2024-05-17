@@ -24,3 +24,16 @@ def isValidDate(date: str) -> bool:
 
 def pagination(data: list, cur_page: int, limit: int = 9) -> list:
     return data[cur_page * limit: cur_page * limit + 9]
+
+
+def isValidName(name: str) -> bool:
+    if 0 < len(name) < 64:
+        return True
+    return False
+
+
+def isValidDescription(description: str) -> bool:
+    print(len(description))
+    if 0 < len(description) < 500:
+        return True
+    return False

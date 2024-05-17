@@ -8,7 +8,7 @@ from sqlalchemy import select, insert, delete, update
 
 from src.database.database import async_session
 from src.database.models import Card, Income, Expense
-from src.services.services import pagination
+from src.services.services import pagination, isValidName
 
 from src.services.states import AddCardState, UpdCardState, ShowCardState, ShowIncomesState, ShowExpensesState
 
@@ -95,21 +95,24 @@ async def create_name(callback: CallbackQuery, state: FSMContext):
     await state.set_state(AddCardState.add_name)
 
 
-# @router.callback_query(StateFilter(AddCardState.add_type))
-# async def error_card_type(message: Message):
-#     await message.answer(CARD_OPERATIONS_LEXICON["card_types"]["incorrect_action"])
-
-
 @router.message(StateFilter(AddCardState.add_name))
 async def set_card_name(message: Message, state: FSMContext):
-    await state.update_data(card_name=message.text.strip())
+    card_name = message.text.strip()
+    if isValidName(card_name):
+        await state.update_data(card_name=card_name)
 
-    await message.answer(
-        text=CARD_OPERATIONS_LEXICON["card_balance"]["balance"],
-        reply_markup=create_exit_keyboard()
-    )
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON["card_balance"]["balance"],
+            reply_markup=create_exit_keyboard()
+        )
 
-    await state.set_state(AddCardState.add_balance)
+        await state.set_state(AddCardState.add_balance)
+
+    else:
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON["card_name"]["incorrect_name"],
+            reply_markup=create_exit_keyboard()
+        )
 
 
 @router.message(StateFilter(AddCardState.add_balance))
@@ -177,15 +180,23 @@ async def upd_card_name(callback: CallbackQuery, state: FSMContext):
 
 @router.message(StateFilter(UpdCardState.upd_name))
 async def set_upd_card_name(message: Message, state: FSMContext):
-    data = await state.get_data()
-    async with async_session() as session:
-        card_id = data["card_id"]
-        stmt = update(Card).where(Card.id == card_id).values(name=message.text)
-        await session.execute(stmt)
-        await session.commit()
+    card_name = message.text.strip()
+    if isValidName(card_name):
+        data = await state.get_data()
+        async with async_session() as session:
+            card_id = data["card_id"]
+            stmt = update(Card).where(Card.id == card_id).values(name=card_name)
+            await session.execute(stmt)
+            await session.commit()
 
-    await state.clear()
-    await message.answer(CARD_OPERATIONS_LEXICON["update_card_name"]["successful_upd"])
+        await state.clear()
+        await message.answer(CARD_OPERATIONS_LEXICON["update_card_name"]["successful_upd"])
+
+    else:
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON["update_card_name"]["incorrect_name"],
+            reply_markup=create_cancel_update_keyboard()
+        )
 
 
 @router.callback_query(F.data[:8] == "upd_bala", StateFilter(ShowCardState.show_card))

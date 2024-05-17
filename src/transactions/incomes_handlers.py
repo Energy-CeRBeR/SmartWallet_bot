@@ -11,7 +11,7 @@ from sqlalchemy import select, update, insert
 from src.card_operations.keyboards import create_cards_keyboard, create_exit_keyboard
 from src.database.database import async_session
 from src.database.models import Income, IncomeCategory, Card
-from src.services.services import pagination, isValidDate
+from src.services.services import pagination, isValidDate, isValidDescription
 from src.services.states import ShowIncomesState, AddIncomeState
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, \
     LEXICON_COMMANDS as TRANSACTIONS_LEXICON_COMMANDS, print_income_info
@@ -292,12 +292,20 @@ async def no_description(callback: CallbackQuery, state: FSMContext):
 
 @router.message(StateFilter(AddIncomeState.set_description))
 async def set_description(message: Message, state: FSMContext):
-    await state.update_data(description=message.text)
-    await state.set_state(AddIncomeState.set_data)
-    await message.answer(
-        text=TRANSACTIONS_LEXICON["set_description"],
-        reply_markup=create_done_keyboard()
-    )
+    description = message.text.strip()
+    if isValidDescription(description):
+        await state.update_data(description=description)
+        await state.set_state(AddIncomeState.set_data)
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["set_description"],
+            reply_markup=create_done_keyboard()
+        )
+
+    else:
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["incorrect_description"],
+            reply_markup=create_exit_keyboard()
+        )
 
 
 @router.callback_query(F.data == "commit_transaction", StateFilter(AddIncomeState.set_data))
@@ -503,14 +511,20 @@ async def edit_income_description(callback: CallbackQuery, state: FSMContext):
 
 @router.message(StateFilter(ShowIncomesState.set_new_description))
 async def set_new_income_description(message: Message, state: FSMContext):
-    data = await state.get_data()
-    income = data["income"]
-    async with async_session() as session:
-        stmt = update(Income).where(Income.id == income.id).values(description=message.text)
-        await session.execute(stmt)
-        await session.commit()
+    description = message.text.strip()
+    if isValidDescription(description):
+        data = await state.get_data()
+        income = data["income"]
+        async with async_session() as session:
+            stmt = update(Income).where(Income.id == income.id).values(description=description)
+            await session.execute(stmt)
+            await session.commit()
 
-    await state.set_state(ShowIncomesState.show_incomes)
-    await message.answer(TRANSACTIONS_LEXICON["edit_income"]["description_is_update"])
+        await state.set_state(ShowIncomesState.show_incomes)
+        await message.answer(TRANSACTIONS_LEXICON["edit_income"]["description_is_update"])
 
-# Добавить возможность добавления даты в транзакцию при создании
+    else:
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["incorrect_description"],
+            reply_markup=create_exit_transaction_edit_keyboard()
+        )
