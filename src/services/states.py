@@ -25,7 +25,8 @@ class AddExpenseCategoryState(StatesGroup):
 
 
 class UpdCategoryState(StatesGroup):
-    upd_name = State()
+    upd_income_name = State()
+    upd_expense_name = State()
 
 
 class AddIncomeState(StatesGroup):

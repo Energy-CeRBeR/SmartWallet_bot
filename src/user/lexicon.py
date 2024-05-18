@@ -36,6 +36,7 @@ LEXICON: dict[str, str] = {
     "exit_process": "❌ Выход из процесса ❌ ",
     "stop_all_processes": "✅ Все процессы остановлены! Теперь вы можете ввести нужную команду!",
     "operation_is_cancel": "✅ Операция успешно отменена!",
+    "unknown_command": "❓ Я не знаю такой команды :("
 }
 
 LEXICON_COMMANDS: dict = {

@@ -82,3 +82,5 @@ class Expense(Base):
     amount: Mapped[float] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(nullable=True)
     date: Mapped[datetime.date] = mapped_column(default=datetime.date.today())
+
+# all_models = [User, IncomeCategory, ExpenseCategory, Card, Income, Expense]

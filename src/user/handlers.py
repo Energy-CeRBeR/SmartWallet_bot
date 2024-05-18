@@ -7,10 +7,12 @@ from sqlalchemy import select, insert
 
 from src.database.database import async_session
 from src.database.models import User
+# from src.database.models import all_models
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
 from src.user.keyboards import create_stop_keyboard
 from src.user.lexicon import LEXICON as USER_LEXICON
 from src.user.lexicon import LEXICON_COMMANDS as USER_LEXICON_COMMANDS
+from src.services.settings import commands_dict
 
 router = Router()
 
@@ -37,12 +39,28 @@ async def help_info(message: Message):
     await message.answer(text=USER_LEXICON_COMMANDS[message.text])
 
 
-@router.message()
+@router.message(Command(commands=[command[1:] for command in commands_dict]))
 async def error_directory_handler(message: Message):
     await message.answer(
         text=USER_LEXICON["access_error"],
         reply_markup=create_stop_keyboard()
     )
+
+
+# @router.message(F.text == "DROP ALL")
+# async def drop_database(message: Message):
+#     async with async_session() as session:
+#         for table in all_models:
+#             stmt = delete(table)
+#             await session.execute(stmt)
+#             await session.commit()
+#
+#     await message.answer("DROP DATABASE!!!")
+
+
+@router.message()
+async def unknown_command_handler(message: Message):
+    await message.answer(text=USER_LEXICON["unknown_command"])
 
 
 @router.callback_query(F.data == "stop_all_processes")

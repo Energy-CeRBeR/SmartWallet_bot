@@ -186,7 +186,7 @@ async def upd_category_name(callback: CallbackQuery, state: FSMContext):
         category_type=ExpenseCategory,
         category_id=category_id
     )
-    await state.set_state(UpdCategoryState.upd_name)
+    await state.set_state(UpdCategoryState.upd_expense_name)
 
     await callback.message.edit_text(
         text=TRANSACTIONS_LEXICON["update_category_name"],
@@ -194,7 +194,7 @@ async def upd_category_name(callback: CallbackQuery, state: FSMContext):
     )
 
 
-@router.message(StateFilter(UpdCategoryState.upd_name))
+@router.message(StateFilter(UpdCategoryState.upd_expense_name))
 async def set_upd_ex_category_name(message: Message, state: FSMContext):
     new_category_name = message.text.strip()
     if isValidName(new_category_name):
