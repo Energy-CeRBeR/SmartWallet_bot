@@ -36,10 +36,10 @@ def create_exit_show_card_keyboard(text: str) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def card_is_create_keyboard(card: Card) -> InlineKeyboardMarkup:
+def card_is_create_keyboard(card_id: int) -> InlineKeyboardMarkup:
     current_card_button = InlineKeyboardButton(
         text=CARD_OPERATIONS_LEXICON["get_current_card"],
-        callback_data=f"get_card{card.id}"
+        callback_data=f"get_card{card_id}"
     )
 
     cards_list_button = InlineKeyboardButton(
@@ -124,6 +124,12 @@ def create_card_update_keyboard(card_id: int) -> InlineKeyboardMarkup:
         text=CARD_OPERATIONS_LEXICON["card_info"]["balance"],
         callback_data=f"upd_bala{card_id}"
     )
+
+    cards_list_button = InlineKeyboardButton(
+        text=CARD_OPERATIONS_LEXICON["goto_cards_list"],
+        callback_data="show_cards_list"
+    )
+
     back_button = InlineKeyboardButton(
         text=CARD_OPERATIONS_LEXICON["exit_update"],
         callback_data="cancel"
@@ -132,6 +138,7 @@ def create_card_update_keyboard(card_id: int) -> InlineKeyboardMarkup:
         inline_keyboard=[
             [name_button],
             [balance_button],
+            [cards_list_button],
             [back_button]
         ]
     )

@@ -163,7 +163,7 @@ async def set_card(message: Message, state: FSMContext):
 
         await message.answer(
             text=CARD_OPERATIONS_LEXICON["card_is_create"],
-            reply_markup=card_is_create_keyboard(current_card)
+            reply_markup=card_is_create_keyboard(current_card.id)
         )
 
     except ValueError:
@@ -220,7 +220,10 @@ async def set_upd_card_name(message: Message, state: FSMContext):
             await session.commit()
 
         await state.clear()
-        await message.answer(CARD_OPERATIONS_LEXICON["update_card_name"]["successful_upd"])
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON["update_card_name"]["successful_upd"],
+            reply_markup=card_is_create_keyboard(card_id)
+        )
 
     else:
         await message.answer(
@@ -252,8 +255,11 @@ async def set_upd_card_balance(message: Message, state: FSMContext):
             await session.execute(stmt)
             await session.commit()
 
-        await message.answer(CARD_OPERATIONS_LEXICON["update_card_balance"]["successful_upd"])
         await state.clear()
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON["update_card_balance"]["successful_upd"],
+            reply_markup=card_is_create_keyboard(card_id)
+        )
 
     except ValueError:
         await message.answer(
