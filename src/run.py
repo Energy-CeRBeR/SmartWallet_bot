@@ -9,7 +9,6 @@ from src.user.handlers import router as user_router
 from src.card_operations.handlers import router as card_router
 from src.transactions.in_categories_handlers import router as in_categories_router
 from src.transactions.ex_categories_handlers import router as ex_categories_router
-from src.transactions.general_handlers import router as general_transactions_router
 from src.transactions.incomes_handlers import router as income_transactions_router
 from src.transactions.expenses_handlers import router as expenses_transactions_router
 
@@ -24,7 +23,6 @@ async def main():
         card_router,
         in_categories_router,
         ex_categories_router,
-        general_transactions_router,
         income_transactions_router,
         expenses_transactions_router,
         user_router

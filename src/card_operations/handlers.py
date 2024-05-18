@@ -155,12 +155,12 @@ async def set_card(message: Message, state: FSMContext):
 
             await session.execute(stmt)
             await session.commit()
-            await state.clear()
 
             query = select(Card).where(Card.tg_id == message.from_user.id)
             result = await session.execute(query)
             current_card = result.scalars().all()[-1]
 
+        await state.clear()
         await message.answer(
             text=CARD_OPERATIONS_LEXICON["card_is_create"],
             reply_markup=card_is_create_keyboard(current_card.id)
