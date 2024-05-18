@@ -11,6 +11,7 @@ from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
 from src.user.keyboards import create_stop_keyboard
 from src.user.lexicon import LEXICON as USER_LEXICON
 from src.user.lexicon import LEXICON_COMMANDS as USER_LEXICON_COMMANDS
+from src.services.settings import commands_dict
 
 router = Router()
 
@@ -37,12 +38,17 @@ async def help_info(message: Message):
     await message.answer(text=USER_LEXICON_COMMANDS[message.text])
 
 
-@router.message()
+@router.message(Command(commands=[command[1:] for command in commands_dict]))
 async def error_directory_handler(message: Message):
     await message.answer(
         text=USER_LEXICON["access_error"],
         reply_markup=create_stop_keyboard()
     )
+
+
+@router.message()
+async def unknown_command_handler(message: Message):
+    await message.answer(text=USER_LEXICON["unknown_command"])
 
 
 @router.callback_query(F.data == "stop_all_processes")
