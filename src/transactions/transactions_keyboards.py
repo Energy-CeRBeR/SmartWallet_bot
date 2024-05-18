@@ -68,6 +68,38 @@ def create_expenses_keyboard(expenses: list[Expense]) -> InlineKeyboardMarkup:
     return keyboard
 
 
+def create_income_is_create_keyboard(income_id: int) -> InlineKeyboardMarkup:
+    current_income_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["get_current_income"],
+        callback_data=f"get_income{income_id}"
+    )
+
+    incomes_list_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["get_incomes_list"],
+        callback_data="show_incomes_list"
+    )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[current_income_button], [incomes_list_button]])
+
+    return keyboard
+
+
+def create_expense_is_create_keyboard(expense_id: int) -> InlineKeyboardMarkup:
+    current_expense_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["get_current_expense"],
+        callback_data=f"get_expense{expense_id}"
+    )
+
+    expenses_list_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["get_expenses_list"],
+        callback_data="show_expenses_list"
+    )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[current_expense_button], [expenses_list_button]])
+
+    return keyboard
+
+
 def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMarkup:
     edit_category_button = InlineKeyboardButton(
         text="Изменить категорию",
@@ -89,7 +121,10 @@ def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMar
         text="Изменить / добавить описание",
         callback_data=f"edit_{transaction_type}_description"
     )
-
+    transactions_list_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON[f"goto_{transaction_type}_list"],
+        callback_data="show_incomes_list" if transaction_type == "in" else "show_expenses_list"
+    )
     exit_button = InlineKeyboardButton(
         text=TRANSACTIONS_LEXICON["exit"],
         callback_data="exit"
@@ -102,6 +137,7 @@ def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMar
             [edit_amount_button],
             [edit_date_button],
             [edit_description_button],
+            [transactions_list_button],
             [exit_button]
         ]
     )
