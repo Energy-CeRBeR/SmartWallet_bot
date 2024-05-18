@@ -56,6 +56,38 @@ def create_expense_categories_keyboard(categories: list[ExpenseCategory]) -> Inl
     return keyboard
 
 
+def in_category_is_create_keyboard(category_id: int) -> InlineKeyboardMarkup:
+    current_category_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["get_current_in_category"],
+        callback_data=f"get_in_category{category_id}"
+    )
+
+    categories_list_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["get_in_categories_list"],
+        callback_data="show_in_categories_list"
+    )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[current_category_button], [categories_list_button]])
+
+    return keyboard
+
+
+def ex_category_is_create_keyboard(category_id: int) -> InlineKeyboardMarkup:
+    current_category_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["get_current_ex_category"],
+        callback_data=f"get_ex_category{category_id}"
+    )
+
+    categories_list_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["get_ex_categories_list"],
+        callback_data="show_ex_categories_list"
+    )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[current_category_button], [categories_list_button]])
+
+    return keyboard
+
+
 def create_category_actions_keyboard(category_id: int, category_type: str):
     incomes_button = InlineKeyboardButton(
         text=TRANSACTIONS_LEXICON["incomes"],
@@ -73,6 +105,10 @@ def create_category_actions_keyboard(category_id: int, category_type: str):
         text=TRANSACTIONS_LEXICON["category_delete"],
         callback_data=f"del_category{category_type}{category_id}"
     )
+    categories_list_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON[f"goto_{category_type}_categories_list"],
+        callback_data=f"show_{category_type}_categories_list"
+    )
     back_button = InlineKeyboardButton(
         text=TRANSACTIONS_LEXICON["back_show_categories"],
         callback_data="cancel"
@@ -84,6 +120,7 @@ def create_category_actions_keyboard(category_id: int, category_type: str):
             [transactions_button],
             [update_button],
             [delete_button],
+            [categories_list_button],
             [back_button]
         ]
     )

@@ -7,6 +7,7 @@ from sqlalchemy import select, insert
 
 from src.database.database import async_session
 from src.database.models import User
+from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
 from src.user.keyboards import create_stop_keyboard
 from src.user.lexicon import LEXICON as USER_LEXICON
 from src.user.lexicon import LEXICON_COMMANDS as USER_LEXICON_COMMANDS
@@ -56,3 +57,16 @@ async def cancel_operation(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.delete()
     await callback.message.answer(USER_LEXICON["operation_is_cancel"])
+
+
+@router.callback_query(F.data == "exit")
+async def create_exit_router(callback: CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await state.clear()
+
+
+@router.callback_query(F.data == "cancel_edit_transaction")
+async def create_cancel_edit_transaction(callback: CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await callback.message.answer(TRANSACTIONS_LEXICON["exit_from_edit"])
+    await state.clear()
