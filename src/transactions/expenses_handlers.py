@@ -294,12 +294,20 @@ async def add_description(message: Message, state: FSMContext):
 
     try:
         amount = float(message.text.strip())
-        await state.update_data(amount=amount)
-        await message.answer(
-            text=TRANSACTIONS_LEXICON["description"],
-            reply_markup=create_yes_no_keyboard()
-        )
-        await state.set_state(AddExpenseState.get_description)
+
+        if amount > 0:
+            await state.update_data(amount=amount)
+            await message.answer(
+                text=TRANSACTIONS_LEXICON["description"],
+                reply_markup=create_yes_no_keyboard()
+            )
+            await state.set_state(AddExpenseState.get_description)
+
+        else:
+            await message.answer(
+                text=TRANSACTIONS_LEXICON[transactions]["incorrect_amount"],
+                reply_markup=create_exit_keyboard()
+            )
 
     except ValueError:
         await message.answer(
@@ -481,24 +489,32 @@ async def edit_expense_amount(callback: CallbackQuery, state: FSMContext):
 async def set_new_expense_amount(message: Message, state: FSMContext):
     try:
         amount = float(message.text.strip())
-        data = await state.get_data()
-        expense = data["expense"]
-        card = data["card"]
 
-        d = amount - expense.amount
-        new_balance = card.balance - d
-        card.balance = new_balance
-        async with (async_session() as session):
-            stmt = update(Expense).where(Expense.id == expense.id).values(amount=amount)
-            await session.execute(stmt)
-            await session.commit()
+        if amount > 0:
+            data = await state.get_data()
+            expense = data["expense"]
+            card = data["card"]
 
-            stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
-            await session.execute(stmt)
-            await session.commit()
+            d = amount - expense.amount
+            new_balance = card.balance - d
+            card.balance = new_balance
+            async with (async_session() as session):
+                stmt = update(Expense).where(Expense.id == expense.id).values(amount=amount)
+                await session.execute(stmt)
+                await session.commit()
 
-        await state.set_state(ShowExpensesState.show_expenses)
-        await message.answer(TRANSACTIONS_LEXICON["edit_expense"]["amount_is_update"])
+                stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
+                await session.execute(stmt)
+                await session.commit()
+
+            await state.set_state(ShowExpensesState.show_expenses)
+            await message.answer(TRANSACTIONS_LEXICON["edit_expense"]["amount_is_update"])
+
+        else:
+            await message.answer(
+                text=TRANSACTIONS_LEXICON["expense_transactions"]["incorrect_amount"],
+                reply_markup=create_exit_transaction_edit_keyboard()
+            )
 
     except ValueError:
         await message.answer(

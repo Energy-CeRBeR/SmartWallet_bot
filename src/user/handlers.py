@@ -3,10 +3,11 @@ from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery
-from sqlalchemy import select, insert, delete
+from sqlalchemy import select, insert
 
 from src.database.database import async_session
-from src.database.models import User, all_models
+from src.database.models import User
+# from src.database.models import all_models
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
 from src.user.keyboards import create_stop_keyboard
 from src.user.lexicon import LEXICON as USER_LEXICON
