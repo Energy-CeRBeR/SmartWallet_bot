@@ -3,10 +3,10 @@ from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, delete
 
 from src.database.database import async_session
-from src.database.models import User
+from src.database.models import User, all_models
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
 from src.user.keyboards import create_stop_keyboard
 from src.user.lexicon import LEXICON as USER_LEXICON
@@ -44,6 +44,17 @@ async def error_directory_handler(message: Message):
         text=USER_LEXICON["access_error"],
         reply_markup=create_stop_keyboard()
     )
+
+
+# @router.message(F.text == "DROP ALL")
+# async def drop_database(message: Message):
+#     async with async_session() as session:
+#         for table in all_models:
+#             stmt = delete(table)
+#             await session.execute(stmt)
+#             await session.commit()
+#
+#     await message.answer("DROP DATABASE!!!")
 
 
 @router.message()
