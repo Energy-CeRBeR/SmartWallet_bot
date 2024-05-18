@@ -11,7 +11,7 @@ from src.database.models import ExpenseCategory, Expense
 from src.services.services import pagination, isValidName
 from src.services.states import ShowExpensesCategoryState, AddExpenseCategoryState, UpdCategoryState, ShowExpensesState
 from src.transactions.categories_keyboards import create_expense_categories_keyboard, \
-    create_category_actions_keyboard, ex_category_is_create_keyboard
+    create_category_actions_keyboard, create_ex_category_is_create_keyboard
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, print_category_info
 from src.transactions.transactions_keyboards import create_expenses_keyboard
 
@@ -156,7 +156,7 @@ async def set_expense_category(message: Message, state: FSMContext):
         await state.clear()
         await message.answer(
             text=TRANSACTIONS_LEXICON["expense"]["category_is_create"],
-            reply_markup=ex_category_is_create_keyboard(current_ex_category.id)
+            reply_markup=create_ex_category_is_create_keyboard(current_ex_category.id)
         )
 
     else:
@@ -208,7 +208,7 @@ async def set_upd_ex_category_name(message: Message, state: FSMContext):
         await state.clear()
         await message.answer(
             text=TRANSACTIONS_LEXICON["successful_upd_category_name"],
-            reply_markup=ex_category_is_create_keyboard(category_id)
+            reply_markup=create_ex_category_is_create_keyboard(category_id)
         )
 
     else:

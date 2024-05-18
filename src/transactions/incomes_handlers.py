@@ -17,7 +17,7 @@ from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, \
     LEXICON_COMMANDS as TRANSACTIONS_LEXICON_COMMANDS, print_income_info
 from src.transactions.transactions_keyboards import create_incomes_keyboard, create_transaction_edit_keyboard, \
     create_select_category_keyboard, create_exit_transaction_edit_keyboard, create_select_card_keyboard, \
-    create_yes_no_keyboard, create_done_keyboard
+    create_yes_no_keyboard, create_done_keyboard, create_income_is_create_keyboard
 
 router = Router()
 
@@ -50,6 +50,38 @@ async def get_incomes(message: Message, state: FSMContext):
     else:
         await state.clear()
         await message.answer(TRANSACTIONS_LEXICON["income_transactions"]["no_incomes"])
+
+
+@router.callback_query(F.data == "show_incomes_list", StateFilter(default_state))
+@router.callback_query(F.data == "show_incomes_list", StateFilter(ShowIncomesState.show_incomes))
+async def get_incomes(callback: CallbackQuery, state: FSMContext):
+    async with async_session() as session:
+        query = select(Income).where(Income.tg_id == callback.from_user.id)
+        result = await session.execute(query)
+        incomes = result.scalars().all()
+
+    if incomes:
+        pages = len(incomes) // 9 + (len(incomes) % 9 != 0)
+        buttons = [income for income in incomes]
+        buttons.sort(key=lambda x: x.date, reverse=True)
+
+        await state.set_state(ShowIncomesState.show_incomes)
+        await state.update_data(
+            page=0,
+            pages=pages,
+            incomes=buttons
+        )
+
+        cur_buttons = pagination(buttons, 0)
+
+        await callback.message.edit_text(
+            text=f'{TRANSACTIONS_LEXICON["income"]["incomes_list"]} Страница 1 / {pages}',
+            reply_markup=create_incomes_keyboard(cur_buttons)
+        )
+    else:
+        await callback.message.delete()
+        await state.clear()
+        await callback.message.answer(TRANSACTIONS_LEXICON["income_transactions"]["no_incomes"])
 
 
 @router.callback_query(F.data == "next_page", StateFilter(ShowIncomesState.show_incomes))
@@ -86,9 +118,12 @@ async def goto_back_incomes_page(callback: CallbackQuery, state: FSMContext):
         await state.update_data(page=cur_page)
 
 
+@router.callback_query(F.data[:10] == "get_income", StateFilter(default_state))
 @router.callback_query(F.data[:10] == "get_income", StateFilter(ShowIncomesState.show_incomes))
 async def get_income_info(callback: CallbackQuery, state: FSMContext):
     income_id = int(callback.data[10:])
+    await state.set_state(ShowIncomesState.show_incomes)
+
     async with async_session() as session:
         query = select(Income).where(Income.id == income_id)
         result = await session.execute(query)
@@ -311,15 +346,11 @@ async def set_description(message: Message, state: FSMContext):
 @router.callback_query(F.data == "commit_transaction", StateFilter(AddIncomeState.set_data))
 async def set_transaction(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    category_type_str = data["category_type_str"]
-    transactions = "income_transactions" if category_type_str == "income" else "expense_transactions"
     amount = data["amount"]
-    category_type = data["category_type"]
-
     async with async_session() as session:
         if "date" in data:
             date = datetime.strptime(data["date"], '%d.%m.%Y').date()
-            stmt = insert(category_type).values(
+            stmt = insert(Income).values(
                 tg_id=callback.from_user.id,
                 category_id=data["category_id"],
                 card_id=data["card_id"],
@@ -328,7 +359,7 @@ async def set_transaction(callback: CallbackQuery, state: FSMContext):
                 description=data["description"]
             )
         else:
-            stmt = insert(category_type).values(
+            stmt = insert(Income).values(
                 tg_id=callback.from_user.id,
                 category_id=data["category_id"],
                 card_id=data["card_id"],
@@ -338,16 +369,23 @@ async def set_transaction(callback: CallbackQuery, state: FSMContext):
 
         card_update = update(Card).where(
             Card.id == data["card_id"]).values(
-            balance=Card.balance + amount if category_type_str == "income" else Card.balance - amount
+            balance=Card.balance + amount
         )
 
         await session.execute(stmt)
         await session.execute(card_update)
         await session.commit()
 
-        await state.clear()
-        await callback.message.delete()
-        await callback.message.answer(text=TRANSACTIONS_LEXICON[transactions]["income_is_create"])
+        query = select(Income).where(Income.tg_id == callback.from_user.id)
+        result = await session.execute(query)
+        current_income = result.scalars().all()[-1]
+
+    await state.clear()
+    await callback.message.delete()
+    await callback.message.answer(
+        text=TRANSACTIONS_LEXICON["income_transactions"]["income_is_create"],
+        reply_markup=create_income_is_create_keyboard(current_income.id)
+    )
 
 
 @router.callback_query(F.data == "edit_in_category", StateFilter(ShowIncomesState.show_incomes))

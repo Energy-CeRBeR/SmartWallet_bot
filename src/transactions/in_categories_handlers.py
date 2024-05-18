@@ -11,7 +11,7 @@ from src.database.models import IncomeCategory, Income
 from src.services.services import pagination, isValidName
 from src.services.states import ShowIncomesCategoryState, AddIncomeCategoryState, UpdCategoryState, ShowIncomesState
 from src.transactions.categories_keyboards import create_income_categories_keyboard, create_category_actions_keyboard, \
-    in_category_is_create_keyboard
+    create_in_category_is_create_keyboard
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, print_category_info
 from src.transactions.transactions_keyboards import create_incomes_keyboard
 
@@ -156,7 +156,7 @@ async def set_income_category(message: Message, state: FSMContext):
         await state.clear()
         await message.answer(
             text=TRANSACTIONS_LEXICON["income"]["category_is_create"],
-            reply_markup=in_category_is_create_keyboard(current_in_category.id)
+            reply_markup=create_in_category_is_create_keyboard(current_in_category.id)
         )
 
     else:
@@ -208,7 +208,7 @@ async def set_upd_in_category_name(message: Message, state: FSMContext):
         await state.clear()
         await message.answer(
             text=TRANSACTIONS_LEXICON["successful_upd_category_name"],
-            reply_markup=in_category_is_create_keyboard(category_id)
+            reply_markup=create_in_category_is_create_keyboard(category_id)
         )
 
     else:
