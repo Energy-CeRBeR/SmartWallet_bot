@@ -13,7 +13,7 @@ from src.services.services import pagination, isValidName
 from src.services.states import AddCardState, UpdCardState, ShowCardState, ShowIncomesState, ShowExpensesState
 
 from src.card_operations.lexicon import (
-    LEXICON as CARD_OPERATIONS_LEXICON,
+    CARD_OPERATIONS_LEXICON as CARD_OPERATIONS_LEXICON,
     LEXICON_COMMANDS as CARD_OPERATIONS_LEXICON_COMMANDS,
     print_card_info
 )
@@ -25,7 +25,7 @@ from src.card_operations.keyboards import (
     create_cards_keyboard,
     create_card_actions_keyboard,
     create_card_update_keyboard,
-    create_cancel_update_keyboard
+    create_cancel_update_keyboard, card_is_create_keyboard
 )
 from src.transactions.transactions_keyboards import create_incomes_keyboard, create_expenses_keyboard
 
@@ -50,9 +50,31 @@ async def get_cards(message: Message, state: FSMContext):
             await message.answer(CARD_OPERATIONS_LEXICON_COMMANDS[message.text]["no_cards"])
 
 
+@router.callback_query(F.data == "show_cards_list", StateFilter(default_state))
+@router.callback_query(F.data == "show_cards_list", StateFilter(ShowCardState.show_card))
+async def get_cards(callback: CallbackQuery, state: FSMContext):
+    async with async_session() as session:
+        query = select(Card).where(Card.tg_id == callback.from_user.id)
+        result = await session.execute(query)
+        cards = result.scalars().all()
+        if cards:
+            buttons = [card for card in cards]
+            await callback.message.edit_text(
+                text=CARD_OPERATIONS_LEXICON_COMMANDS["/cards"]["card_list"],
+                reply_markup=create_cards_keyboard(buttons)
+            )
+            await state.set_state(ShowCardState.show_card)
+        else:
+            await state.clear()
+            await callback.message.delete()
+            await callback.message.answer(CARD_OPERATIONS_LEXICON_COMMANDS[callback.message.text]["no_cards"])
+
+
 @router.callback_query(F.data[:8] == "get_card", StateFilter(ShowCardState.show_card))
-async def show_card(callback: CallbackQuery):
+@router.callback_query(F.data[:8] == "get_card", StateFilter(default_state))
+async def show_card(callback: CallbackQuery, state: FSMContext):
     card_id = int(callback.data[8:])
+    await state.set_state(ShowCardState.show_card)
     async with async_session() as session:
         query = select(Card).where(Card.id == card_id)
         result = await session.execute(query)
@@ -116,7 +138,7 @@ async def set_card_name(message: Message, state: FSMContext):
 
 
 @router.message(StateFilter(AddCardState.add_balance))
-async def set_card_balance(message: Message, state: FSMContext):
+async def set_card(message: Message, state: FSMContext):
     try:
         balance = float(message.text.strip())
         await state.update_data(card_balance=balance)
@@ -131,10 +153,18 @@ async def set_card_balance(message: Message, state: FSMContext):
                 balance=data["card_balance"]
             )
 
-        await session.execute(stmt)
-        await session.commit()
-        await state.clear()
-        await message.answer(text=CARD_OPERATIONS_LEXICON["card_is_create"])
+            await session.execute(stmt)
+            await session.commit()
+            await state.clear()
+
+            query = select(Card).where(Card.tg_id == message.from_user.id)
+            result = await session.execute(query)
+            current_card = result.scalars().all()[-1]
+
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON["card_is_create"],
+            reply_markup=card_is_create_keyboard(current_card.id)
+        )
 
     except ValueError:
         await message.answer(
@@ -190,7 +220,10 @@ async def set_upd_card_name(message: Message, state: FSMContext):
             await session.commit()
 
         await state.clear()
-        await message.answer(CARD_OPERATIONS_LEXICON["update_card_name"]["successful_upd"])
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON["update_card_name"]["successful_upd"],
+            reply_markup=card_is_create_keyboard(card_id)
+        )
 
     else:
         await message.answer(
@@ -222,8 +255,11 @@ async def set_upd_card_balance(message: Message, state: FSMContext):
             await session.execute(stmt)
             await session.commit()
 
-        await message.answer(CARD_OPERATIONS_LEXICON["update_card_balance"]["successful_upd"])
         await state.clear()
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON["update_card_balance"]["successful_upd"],
+            reply_markup=card_is_create_keyboard(card_id)
+        )
 
     except ValueError:
         await message.answer(
