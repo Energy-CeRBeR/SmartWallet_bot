@@ -52,6 +52,26 @@ def card_is_create_keyboard(card_id: int) -> InlineKeyboardMarkup:
     return keyboard
 
 
+def create_yes_no_delete_keyboard() -> InlineKeyboardMarkup:
+    yes_button = InlineKeyboardButton(
+        text="Да",
+        callback_data=f"YES"
+    )
+    no_button = InlineKeyboardButton(
+        text="Нет",
+        callback_data=f"NO"
+    )
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [yes_button],
+            [no_button],
+        ]
+    )
+
+    return keyboard
+
+
 def create_cards_keyboard(cards: list[Card], edit=False) -> InlineKeyboardMarkup:
     buttons = list()
     for card in cards:

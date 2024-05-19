@@ -193,7 +193,7 @@ def create_select_card_keyboard(cards: list[Card]) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def create_yes_no_keyboard() -> InlineKeyboardMarkup:
+def create_yes_no_add_keyboard() -> InlineKeyboardMarkup:
     yes_button = InlineKeyboardButton(
         text="Да",
         callback_data=f"YES"

@@ -14,6 +14,7 @@ class AddCardState(StatesGroup):
 class UpdCardState(StatesGroup):
     upd_name = State()
     upd_balance = State()
+    del_card = State()
 
 
 class AddIncomeCategoryState(StatesGroup):

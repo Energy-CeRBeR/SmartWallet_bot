@@ -17,7 +17,7 @@ from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, \
     LEXICON_COMMANDS as TRANSACTION_LEXICON_COMMANDS, print_expense_info
 from src.transactions.transactions_keyboards import create_expenses_keyboard, create_transaction_edit_keyboard, \
     create_select_category_keyboard, create_exit_transaction_edit_keyboard, create_select_card_keyboard, \
-    create_yes_no_keyboard, create_done_keyboard, create_expense_is_create_keyboard
+    create_yes_no_add_keyboard, create_done_keyboard, create_expense_is_create_keyboard
 
 router = Router()
 
@@ -240,7 +240,7 @@ async def yes_no_add_card(callback: CallbackQuery, state: FSMContext):
     await state.update_data(card_id=card_id)
     await callback.message.edit_text(
         text=TRANSACTIONS_LEXICON["add_date"],
-        reply_markup=create_yes_no_keyboard()
+        reply_markup=create_yes_no_add_keyboard()
     )
 
 
@@ -299,7 +299,7 @@ async def add_description(message: Message, state: FSMContext):
             await state.update_data(amount=amount)
             await message.answer(
                 text=TRANSACTIONS_LEXICON["description"],
-                reply_markup=create_yes_no_keyboard()
+                reply_markup=create_yes_no_add_keyboard()
             )
             await state.set_state(AddExpenseState.get_description)
 
