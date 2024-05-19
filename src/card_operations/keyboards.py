@@ -36,7 +36,7 @@ def create_exit_show_card_keyboard(text: str) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def card_is_create_keyboard(card_id: int) -> InlineKeyboardMarkup:
+def create_card_is_create_keyboard(card_id: int) -> InlineKeyboardMarkup:
     current_card_button = InlineKeyboardButton(
         text=CARD_OPERATIONS_LEXICON["get_current_card"],
         callback_data=f"get_card{card_id}"
@@ -48,6 +48,26 @@ def card_is_create_keyboard(card_id: int) -> InlineKeyboardMarkup:
     )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[current_card_button], [cards_list_button]])
+
+    return keyboard
+
+
+def create_yes_no_delete_keyboard() -> InlineKeyboardMarkup:
+    yes_button = InlineKeyboardButton(
+        text="Да",
+        callback_data=f"YES"
+    )
+    no_button = InlineKeyboardButton(
+        text="Нет",
+        callback_data=f"NO"
+    )
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [yes_button],
+            [no_button],
+        ]
+    )
 
     return keyboard
 

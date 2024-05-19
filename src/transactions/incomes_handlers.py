@@ -6,9 +6,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import default_state
 
-from sqlalchemy import select, update, insert
+from sqlalchemy import select, update, insert, delete
 
-from src.card_operations.keyboards import create_cards_keyboard, create_exit_keyboard
+from src.card_operations.keyboards import create_cards_keyboard, create_exit_keyboard, create_yes_no_delete_keyboard
 from src.database.database import async_session
 from src.database.models import Income, IncomeCategory, Card
 from src.services.services import pagination, isValidDate, isValidDescription
@@ -17,7 +17,7 @@ from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, \
     LEXICON_COMMANDS as TRANSACTIONS_LEXICON_COMMANDS, print_income_info
 from src.transactions.transactions_keyboards import create_incomes_keyboard, create_transaction_edit_keyboard, \
     create_select_category_keyboard, create_exit_transaction_edit_keyboard, create_select_card_keyboard, \
-    create_yes_no_keyboard, create_done_keyboard, create_income_is_create_keyboard
+    create_yes_no_add_keyboard, create_done_keyboard, create_income_is_create_keyboard
 
 router = Router()
 
@@ -240,7 +240,7 @@ async def yes_no_add_card(callback: CallbackQuery, state: FSMContext):
     await state.update_data(card_id=card_id)
     await callback.message.edit_text(
         text=TRANSACTIONS_LEXICON["add_date"],
-        reply_markup=create_yes_no_keyboard()
+        reply_markup=create_yes_no_add_keyboard()
     )
 
 
@@ -299,7 +299,7 @@ async def add_description(message: Message, state: FSMContext):
             await state.update_data(amount=amount)
             await message.answer(
                 text=TRANSACTIONS_LEXICON["description"],
-                reply_markup=create_yes_no_keyboard()
+                reply_markup=create_yes_no_add_keyboard()
             )
             await state.set_state(AddIncomeState.get_description)
 
@@ -582,3 +582,49 @@ async def set_new_income_description(message: Message, state: FSMContext):
             text=TRANSACTIONS_LEXICON["incorrect_description"],
             reply_markup=create_exit_transaction_edit_keyboard()
         )
+
+
+@router.callback_query(F.data == "del_in", StateFilter(ShowIncomesState.show_incomes))
+async def del_income(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(ShowIncomesState.del_income)
+    await callback.message.edit_text(
+        text=TRANSACTIONS_LEXICON["edit_income"]["confirm_del"],
+        reply_markup=create_yes_no_delete_keyboard()
+    )
+
+
+@router.callback_query(F.data == "NO", StateFilter(ShowIncomesState.del_income))
+async def no_delete_card(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    income = data["income"]
+
+    await state.clear()
+    await callback.message.edit_text(
+        text=TRANSACTIONS_LEXICON["edit_income"]["cancel_del"],
+        reply_markup=create_income_is_create_keyboard(income.id)
+    )
+
+
+@router.callback_query(F.data == "YES", StateFilter(ShowIncomesState.del_income))
+async def yes_delete_card(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    income = data["income"]
+
+    async with async_session() as session:
+        to_delete_income = delete(Income).where(Income.id == income.id)
+        await session.execute(to_delete_income)
+        await session.commit()
+
+        amount = income.amount
+        stmt = select(Card).where(Card.id == income.card_id)
+        result = await session.execute(stmt)
+        card = result.scalars().first()
+        new_balance = card.balance - amount
+
+        to_update_card = update(Card).where(Card.id == card.id).values(balance=new_balance)
+        await session.execute(to_update_card)
+        await session.commit()
+
+    await state.clear()
+    await callback.message.delete()
+    await callback.message.answer(TRANSACTIONS_LEXICON["edit_income"]["is_delete"])

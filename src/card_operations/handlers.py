@@ -25,7 +25,7 @@ from src.card_operations.keyboards import (
     create_cards_keyboard,
     create_card_actions_keyboard,
     create_card_update_keyboard,
-    create_cancel_update_keyboard, card_is_create_keyboard
+    create_cancel_update_keyboard, create_card_is_create_keyboard, create_yes_no_delete_keyboard
 )
 from src.transactions.transactions_keyboards import create_incomes_keyboard, create_expenses_keyboard
 
@@ -163,7 +163,7 @@ async def set_card(message: Message, state: FSMContext):
         await state.clear()
         await message.answer(
             text=CARD_OPERATIONS_LEXICON["card_is_create"],
-            reply_markup=card_is_create_keyboard(current_card.id)
+            reply_markup=create_card_is_create_keyboard(current_card.id)
         )
 
     except ValueError:
@@ -176,9 +176,41 @@ async def set_card(message: Message, state: FSMContext):
 @router.callback_query(F.data[:8] == "del_card", StateFilter(ShowCardState.show_card))
 async def del_card(callback: CallbackQuery, state: FSMContext):
     card_id = int(callback.data[8:])
+
+    await state.update_data(card_id=card_id)
+    await state.set_state(UpdCardState.del_card)
+    await callback.message.edit_text(
+        text=CARD_OPERATIONS_LEXICON["confirm_del_card"],
+        reply_markup=create_yes_no_delete_keyboard()
+    )
+
+
+@router.callback_query(F.data == "NO", StateFilter(UpdCardState.del_card))
+async def no_delete_card(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    card_id = data["card_id"]
+
+    await state.clear()
+    await callback.message.edit_text(
+        text=CARD_OPERATIONS_LEXICON["cancel_del_card"],
+        reply_markup=create_card_is_create_keyboard(card_id)
+    )
+
+
+@router.callback_query(F.data == "YES", StateFilter(UpdCardState.del_card))
+async def yes_delete_card(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    card_id = data["card_id"]
+
     async with async_session() as session:
-        to_delete = delete(Card).where(Card.id == card_id)
-        await session.execute(to_delete)
+        to_delete_card = delete(Card).where(Card.id == card_id)
+        to_delete_income = delete(Income).where(Income.card_id == card_id)
+        to_delete_expense = delete(Expense).where(Expense.card_id == card_id)
+
+        await session.execute(to_delete_card)
+        await session.execute(to_delete_income)
+        await session.execute(to_delete_expense)
+
         await session.commit()
 
     await state.clear()
@@ -222,7 +254,7 @@ async def set_upd_card_name(message: Message, state: FSMContext):
         await state.clear()
         await message.answer(
             text=CARD_OPERATIONS_LEXICON["update_card_name"]["successful_upd"],
-            reply_markup=card_is_create_keyboard(card_id)
+            reply_markup=create_card_is_create_keyboard(card_id)
         )
 
     else:
@@ -258,7 +290,7 @@ async def set_upd_card_balance(message: Message, state: FSMContext):
         await state.clear()
         await message.answer(
             text=CARD_OPERATIONS_LEXICON["update_card_balance"]["successful_upd"],
-            reply_markup=card_is_create_keyboard(card_id)
+            reply_markup=create_card_is_create_keyboard(card_id)
         )
 
     except ValueError:
@@ -294,10 +326,13 @@ async def get_incomes(callback: CallbackQuery, state: FSMContext):
             text=f'{TRANSACTIONS_LEXICON["income"]["incomes_list"]} Страница 1 / {pages}',
             reply_markup=create_incomes_keyboard(cur_buttons)
         )
+
     else:
         await state.clear()
-        await callback.message.delete()
-        await callback.message.answer(TRANSACTIONS_LEXICON["income_transactions"]["no_incomes"])
+        await callback.message.edit_text(
+            text=TRANSACTIONS_LEXICON["income_transactions"]["no_incomes"],
+            reply_markup=create_card_is_create_keyboard(card_id)
+        )
 
 
 @router.callback_query(F.data[:12] == "get_expenses", StateFilter(ShowCardState.show_card))
@@ -326,7 +361,10 @@ async def get_expenses(callback: CallbackQuery, state: FSMContext):
             text=f'{TRANSACTIONS_LEXICON["expense"]["expenses_list"]} Страница 1 / {pages}',
             reply_markup=create_expenses_keyboard(cur_buttons)
         )
+
     else:
         await state.clear()
-        await callback.message.delete()
-        await callback.message.answer(TRANSACTIONS_LEXICON["expense_transactions"]["no_expenses"])
+        await callback.message.edit_text(
+            text=TRANSACTIONS_LEXICON["expense_transactions"]["no_expenses"],
+            reply_markup=create_card_is_create_keyboard(card_id)
+        )
