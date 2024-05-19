@@ -121,6 +121,10 @@ def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMar
         text="Изменить / добавить описание",
         callback_data=f"edit_{transaction_type}_description"
     )
+    delete_transaction_button = InlineKeyboardButton(
+        text="Удалить транзакцию",
+        callback_data=f"del_{transaction_type}"
+    )
     transactions_list_button = InlineKeyboardButton(
         text=TRANSACTIONS_LEXICON[f"goto_{transaction_type}_list"],
         callback_data="show_incomes_list" if transaction_type == "in" else "show_expenses_list"
@@ -137,6 +141,7 @@ def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMar
             [edit_amount_button],
             [edit_date_button],
             [edit_description_button],
+            [delete_transaction_button],
             [transactions_list_button],
             [exit_button]
         ]

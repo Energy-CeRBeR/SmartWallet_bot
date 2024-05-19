@@ -6,9 +6,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import default_state
 
-from sqlalchemy import select, update, insert
+from sqlalchemy import select, update, insert, delete
 
-from src.card_operations.keyboards import create_cards_keyboard, create_exit_keyboard
+from src.card_operations.keyboards import create_cards_keyboard, create_exit_keyboard, create_yes_no_delete_keyboard
 from src.database.database import async_session
 from src.database.models import Expense, ExpenseCategory, Card
 from src.services.services import pagination, isValidDate, isValidDescription
@@ -582,3 +582,49 @@ async def set_new_expense_description(message: Message, state: FSMContext):
             text=TRANSACTIONS_LEXICON["incorrect_description"],
             reply_markup=create_exit_transaction_edit_keyboard()
         )
+
+
+@router.callback_query(F.data == "del_ex", StateFilter(ShowExpensesState.show_expenses))
+async def del_expense(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(ShowExpensesState.del_expense)
+    await callback.message.edit_text(
+        text=TRANSACTIONS_LEXICON["edit_expense"]["confirm_del"],
+        reply_markup=create_yes_no_delete_keyboard()
+    )
+
+
+@router.callback_query(F.data == "NO", StateFilter(ShowExpensesState.del_expense))
+async def no_delete_card(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    expense = data["expense"]
+
+    await state.clear()
+    await callback.message.edit_text(
+        text=TRANSACTIONS_LEXICON["edit_expense"]["cancel_del"],
+        reply_markup=create_expense_is_create_keyboard(expense.id)
+    )
+
+
+@router.callback_query(F.data == "YES", StateFilter(ShowExpensesState.del_expense))
+async def yes_delete_card(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    expense = data["expense"]
+
+    async with async_session() as session:
+        to_delete_expense = delete(Expense).where(Expense.id == expense.id)
+        await session.execute(to_delete_expense)
+        await session.commit()
+
+        amount = expense.amount
+        stmt = select(Card).where(Card.id == expense.card_id)
+        result = await session.execute(stmt)
+        card = result.scalars().first()
+        new_balance = card.balance + amount
+
+        to_update_card = update(Card).where(Card.id == card.id).values(balance=new_balance)
+        await session.execute(to_update_card)
+        await session.commit()
+
+    await state.clear()
+    await callback.message.delete()
+    await callback.message.answer(TRANSACTIONS_LEXICON["edit_expense"]["is_delete"])
