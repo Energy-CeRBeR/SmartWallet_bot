@@ -36,7 +36,7 @@ def create_exit_show_card_keyboard(text: str) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def card_is_create_keyboard(card_id: int) -> InlineKeyboardMarkup:
+def create_card_is_create_keyboard(card_id: int) -> InlineKeyboardMarkup:
     current_card_button = InlineKeyboardButton(
         text=CARD_OPERATIONS_LEXICON["get_current_card"],
         callback_data=f"get_card{card_id}"
