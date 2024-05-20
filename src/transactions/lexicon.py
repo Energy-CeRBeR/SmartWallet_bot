@@ -2,8 +2,12 @@ from src.database.models import Income, IncomeCategory, Card, Expense, ExpenseCa
 
 
 def print_category_info(category) -> str:
-    text = (f"Текущая категория: {category.name}\n"
-            f"Выберите действия:")
+    text = f"""
+Текущая категория 📋:    <b>{category.name}</b>
+    
+<b>Выберите действие 👇</b>
+"""
+
     return text
 
 
@@ -147,6 +151,9 @@ LEXICON: dict = {
 
     "incomes": "📋 Список доходов 📋",
     "expenses": "📋 Список расходов 📋",
+
+    "create_in_category": "🆕 Создать категорию доходов 🆕",
+    "create_ex_category": "🆕 Создать категорию расходов 🆕",
 
     "get_current_in_category": "🔙 К текущей категории дохода",
     "get_current_ex_category": "🔙 К текущей категории расхода",
