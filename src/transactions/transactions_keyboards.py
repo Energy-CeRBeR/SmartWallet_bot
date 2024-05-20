@@ -68,6 +68,26 @@ def create_expenses_keyboard(expenses: list[Expense]) -> InlineKeyboardMarkup:
     return keyboard
 
 
+def create_add_new_income_keyboard() -> InlineKeyboardMarkup:
+    create_ex_category_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["create_income"],
+        callback_data="start_create_income"
+    )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[create_ex_category_button]])
+    return keyboard
+
+
+def create_add_new_expense_keyboard() -> InlineKeyboardMarkup:
+    create_ex_category_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["create_expense"],
+        callback_data="start_create_expense"
+    )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[create_ex_category_button]])
+    return keyboard
+
+
 def create_income_is_create_keyboard(income_id: int) -> InlineKeyboardMarkup:
     current_income_button = InlineKeyboardButton(
         text=TRANSACTIONS_LEXICON["get_current_income"],

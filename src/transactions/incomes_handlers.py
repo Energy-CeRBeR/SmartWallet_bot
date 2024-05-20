@@ -8,17 +8,19 @@ from aiogram.fsm.state import default_state
 
 from sqlalchemy import select, update, insert, delete
 
-from src.card_operations.keyboards import create_cards_keyboard, create_exit_keyboard, create_yes_no_delete_keyboard
+from src.card_operations.keyboards import create_cards_keyboard, create_exit_keyboard, create_yes_no_delete_keyboard, \
+    create_add_new_card_keyboard
 from src.database.database import async_session
 from src.database.models import Income, IncomeCategory, Card
 from src.services.services import pagination, isValidDate, isValidDescription
 from src.services.settings import LIMITS
 from src.services.states import ShowIncomesState, AddIncomeState
+from src.transactions.categories_keyboards import create_add_new_in_category_keyboard
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, \
     LEXICON_COMMANDS as TRANSACTIONS_LEXICON_COMMANDS, print_income_info
 from src.transactions.transactions_keyboards import create_incomes_keyboard, create_transaction_edit_keyboard, \
     create_select_category_keyboard, create_exit_transaction_edit_keyboard, create_select_card_keyboard, \
-    create_yes_no_add_keyboard, create_done_keyboard, create_income_is_create_keyboard
+    create_yes_no_add_keyboard, create_done_keyboard, create_income_is_create_keyboard, create_add_new_income_keyboard
 
 router = Router()
 
@@ -49,9 +51,13 @@ async def get_incomes(message: Message, state: FSMContext):
             text=f'{TRANSACTIONS_LEXICON["income"]["incomes_list"]} Страница 1 / {pages}',
             reply_markup=create_incomes_keyboard(cur_buttons)
         )
+
     else:
         await state.clear()
-        await message.answer(TRANSACTIONS_LEXICON["income_transactions"]["no_incomes"])
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["income_transactions"]["no_incomes"],
+            reply_markup=create_add_new_income_keyboard()
+        )
 
 
 @router.callback_query(F.data == "show_incomes_list", StateFilter(default_state))
@@ -81,10 +87,13 @@ async def get_incomes(callback: CallbackQuery, state: FSMContext):
             text=f'{TRANSACTIONS_LEXICON["income"]["incomes_list"]} Страница 1 / {pages}',
             reply_markup=create_incomes_keyboard(cur_buttons)
         )
+
     else:
-        await callback.message.delete()
         await state.clear()
-        await callback.message.answer(TRANSACTIONS_LEXICON["income_transactions"]["no_incomes"])
+        await callback.message.edit_text(
+            text=TRANSACTIONS_LEXICON["income_transactions"]["no_incomes"],
+            reply_markup=create_add_new_income_keyboard()
+        )
 
 
 @router.callback_query(F.data == "next_page", StateFilter(ShowIncomesState.show_incomes))
@@ -153,7 +162,7 @@ async def get_income_info(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(Command(commands="add_income"), StateFilter(default_state))
-async def select_income_type(message: Message, state: FSMContext):
+async def add_income(message: Message, state: FSMContext):
     async with async_session() as session:
         query = select(IncomeCategory).where(IncomeCategory.tg_id == message.from_user.id)
         result = await session.execute(query)
@@ -179,7 +188,43 @@ async def select_income_type(message: Message, state: FSMContext):
             )
 
         else:
-            await message.answer(TRANSACTIONS_LEXICON["income_transactions"]["no_categories"])
+            await message.answer(
+                text=TRANSACTIONS_LEXICON["income_transactions"]["no_categories"],
+                reply_markup=create_add_new_in_category_keyboard()
+            )
+
+
+@router.callback_query(F.data == "start_create_income", StateFilter(default_state))
+async def add_income(callback: CallbackQuery, state: FSMContext):
+    async with async_session() as session:
+        query = select(IncomeCategory).where(IncomeCategory.tg_id == callback.from_user.id)
+        result = await session.execute(query)
+        categories = result.scalars().all()
+        if categories:
+            keyboard_limit = LIMITS["max_elements_in_keyboard"]
+            pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
+            buttons = [category for category in categories]
+
+            await state.set_state(AddIncomeState.select_category)
+            await state.update_data(
+                page=0,
+                pages=pages,
+                in_categories=buttons,
+                category_type=Income,
+                category_type_str="income"
+            )
+
+            cur_buttons = pagination(buttons, 0)
+            await callback.message.edit_text(
+                text=f"{TRANSACTIONS_LEXICON_COMMANDS['/add_income']} Страница 1 / {pages}",
+                reply_markup=create_select_category_keyboard(cur_buttons)
+            )
+
+        else:
+            await callback.message.edit_text(
+                text=TRANSACTIONS_LEXICON["income_transactions"]["no_categories"],
+                reply_markup=create_add_new_in_category_keyboard()
+            )
 
 
 @router.callback_query(F.data == "next_page", StateFilter(AddIncomeState.select_category))
@@ -234,8 +279,11 @@ async def select_card(callback: CallbackQuery, state: FSMContext):
             await state.set_state(AddIncomeState.add_date)
 
         else:
-            await callback.message.answer(TRANSACTIONS_LEXICON["no_cards"])
             await state.clear()
+            await callback.message.edit_text(
+                text=TRANSACTIONS_LEXICON["no_cards"],
+                reply_markup=create_add_new_card_keyboard()
+            )
 
 
 @router.callback_query(F.data[:8] == "add_date", StateFilter(AddIncomeState.add_date))
