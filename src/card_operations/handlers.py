@@ -11,6 +11,7 @@ from src.database.models import Card, Income, Expense
 from src.services.services import pagination, isValidName
 
 from src.services.states import AddCardState, UpdCardState, ShowCardState, ShowIncomesState, ShowExpensesState
+from src.services.settings import LIMITS
 
 from src.card_operations.lexicon import (
     CARD_OPERATIONS_LEXICON as CARD_OPERATIONS_LEXICON,
@@ -87,13 +88,22 @@ async def show_card(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(Command(commands="add_card"), StateFilter(default_state))
-async def create_type(message: Message, state: FSMContext):
-    await message.answer(
-        text=CARD_OPERATIONS_LEXICON_COMMANDS[message.text],
-        reply_markup=TypeKeyboard.create_keyboard()
-    )
+async def create_card(message: Message, state: FSMContext):
+    async with async_session() as session:
+        query = select(Card).where(Card.tg_id == message.from_user.id)
+        result = await session.execute(query)
+        cards = result.scalars().all()
 
-    await state.set_state(AddCardState.add_type)
+    if len(cards) < LIMITS["max_number_of_cards"]:
+        await message.answer(
+            text=CARD_OPERATIONS_LEXICON_COMMANDS[message.text],
+            reply_markup=TypeKeyboard.create_keyboard()
+        )
+
+        await state.set_state(AddCardState.add_type)
+
+    else:
+        await message.answer(CARD_OPERATIONS_LEXICON_COMMANDS[message.text]["max_number_of_cards"])
 
 
 @router.callback_query(F.data == "credit_card", StateFilter(AddCardState.add_type))
@@ -309,7 +319,8 @@ async def get_incomes(callback: CallbackQuery, state: FSMContext):
         incomes = result.scalars().all()
 
     if incomes:
-        pages = len(incomes) // 9 + (len(incomes) % 9 != 0)
+        keyboard_limit = LIMITS["max_elements_in_keyboard"]
+        pages = len(incomes) // keyboard_limit + (len(incomes) % keyboard_limit != 0)
         buttons = [income for income in incomes]
         buttons.sort(key=lambda x: x.date, reverse=True)
 
@@ -344,7 +355,8 @@ async def get_expenses(callback: CallbackQuery, state: FSMContext):
         expenses = result.scalars().all()
 
     if expenses:
-        pages = len(expenses) // 9 + (len(expenses) % 9 != 0)
+        keyboard_limit = LIMITS["max_elements_in_keyboard"]
+        pages = len(expenses) // keyboard_limit + (len(expenses) % keyboard_limit != 0)
         buttons = [expense for expense in expenses]
         buttons.sort(key=lambda x: x.date, reverse=True)
 

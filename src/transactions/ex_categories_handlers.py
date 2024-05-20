@@ -10,6 +10,7 @@ from src.card_operations.keyboards import create_exit_keyboard, create_exit_show
 from src.database.database import async_session
 from src.database.models import ExpenseCategory, Expense
 from src.services.services import pagination, isValidName
+from src.services.settings import LIMITS
 from src.services.states import ShowExpensesCategoryState, AddExpenseCategoryState, UpdCategoryState, ShowExpensesState
 from src.transactions.categories_keyboards import create_expense_categories_keyboard, \
     create_category_actions_keyboard, create_ex_category_is_create_keyboard
@@ -26,7 +27,8 @@ async def get_expense_categories(message: Message, state: FSMContext):
         result = await session.execute(query)
         categories = result.scalars().all()
         if categories:
-            pages = len(categories) // 9 + (len(categories) % 9 != 0)
+            keyboard_limit = LIMITS["max_elements_in_keyboard"]
+            pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
             buttons = [category for category in categories]
 
             await state.set_state(ShowExpensesCategoryState.show_category)
@@ -89,7 +91,8 @@ async def get_expense_categories(callback: CallbackQuery, state: FSMContext):
         result = await session.execute(query)
         categories = result.scalars().all()
         if categories:
-            pages = len(categories) // 9 + (len(categories) % 9 != 0)
+            keyboard_limit = LIMITS["max_elements_in_keyboard"]
+            pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
             buttons = [category for category in categories]
 
             await state.set_state(ShowExpensesCategoryState.show_category)
@@ -131,11 +134,20 @@ async def show_expense_category(callback: CallbackQuery, state: FSMContext):
 
 @router.message(Command(commands="add_ex_category"), StateFilter(default_state))
 async def add_expense_category(message: Message, state: FSMContext):
-    await message.answer(
-        text=TRANSACTIONS_LEXICON["expense"]["add_expense_category"],
-        reply_markup=create_exit_keyboard()
-    )
-    await state.set_state(AddExpenseCategoryState.add_name)
+    async with async_session() as session:
+        query = select(ExpenseCategory).where(ExpenseCategory.tg_id == message.from_user.id)
+        result = await session.execute(query)
+        ex_categories = result.scalars().all()
+
+    if len(ex_categories) < LIMITS["max_number_of_categories"]:
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["expense"]["add_expense_category"],
+            reply_markup=create_exit_keyboard()
+        )
+        await state.set_state(AddExpenseCategoryState.add_name)
+
+    else:
+        await message.answer(TRANSACTIONS_LEXICON["ex_categories_limit"])
 
 
 @router.message(StateFilter(AddExpenseCategoryState.add_name))
@@ -257,7 +269,8 @@ async def get_expenses(callback: CallbackQuery, state: FSMContext):
         expenses = result.scalars().all()
 
     if expenses:
-        pages = len(expenses) // 9 + (len(expenses) % 9 != 0)
+        keyboard_limit = LIMITS["max_elements_in_keyboard"]
+        pages = len(expenses) // keyboard_limit + (len(expenses) % keyboard_limit != 0)
         buttons = [expense for expense in expenses]
         buttons.sort(key=lambda x: x.date, reverse=True)
 

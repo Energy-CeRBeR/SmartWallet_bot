@@ -12,3 +12,9 @@ commands_dict = {
     '/add_income': 'Добавить доход',
     '/add_expense': 'Добавить расход'
 }
+
+LIMITS: dict[str, int] = {
+    "max_elements_in_keyboard": 10,
+    "max_number_of_cards": 10,
+    "max_number_of_categories": 100,
+}

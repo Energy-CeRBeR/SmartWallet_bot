@@ -1,3 +1,6 @@
+from src.services.settings import LIMITS
+
+
 def isValidDate(date: str) -> bool:
     try:
         day, month, year = map(int, date.split('.'))
@@ -22,8 +25,8 @@ def isValidDate(date: str) -> bool:
         return False
 
 
-def pagination(data: list, cur_page: int, limit: int = 9) -> list:
-    return data[cur_page * limit: cur_page * limit + 9]
+def pagination(data: list, cur_page: int, limit: int = LIMITS["max_elements_in_keyboard"]) -> list:
+    return data[cur_page * limit: (cur_page + 1) * limit]
 
 
 def isValidName(name: str) -> bool:
