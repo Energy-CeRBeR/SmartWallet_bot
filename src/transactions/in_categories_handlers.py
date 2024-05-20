@@ -10,6 +10,7 @@ from src.card_operations.keyboards import create_exit_keyboard, create_exit_show
 from src.database.database import async_session
 from src.database.models import IncomeCategory, Income
 from src.services.services import pagination, isValidName
+from src.services.settings import LIMITS
 from src.services.states import ShowIncomesCategoryState, AddIncomeCategoryState, UpdCategoryState, ShowIncomesState
 from src.transactions.categories_keyboards import create_income_categories_keyboard, create_category_actions_keyboard, \
     create_in_category_is_create_keyboard
@@ -26,7 +27,8 @@ async def get_income_categories(message: Message, state: FSMContext):
         result = await session.execute(query)
         categories = result.scalars().all()
         if categories:
-            pages = len(categories) // 9 + (len(categories) % 9 != 0)
+            keyboard_limit = LIMITS["max_elements_in_keyboard"]
+            pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
             buttons = [category for category in categories]
 
             await state.set_state(ShowIncomesCategoryState.show_category)
@@ -89,7 +91,8 @@ async def get_income_categories(callback: CallbackQuery, state: FSMContext):
         result = await session.execute(query)
         categories = result.scalars().all()
         if categories:
-            pages = len(categories) // 9 + (len(categories) % 9 != 0)
+            keyboard_limit = LIMITS["max_elements_in_keyboard"]
+            pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
             buttons = [category for category in categories]
 
             await state.set_state(ShowIncomesCategoryState.show_category)
@@ -131,11 +134,20 @@ async def show_income_category(callback: CallbackQuery, state: FSMContext):
 
 @router.message(Command(commands="add_in_category"), StateFilter(default_state))
 async def add_income_category(message: Message, state: FSMContext):
-    await message.answer(
-        text=TRANSACTIONS_LEXICON["income"]["add_income_category"],
-        reply_markup=create_exit_keyboard()
-    )
-    await state.set_state(AddIncomeCategoryState.add_name)
+    async with async_session() as session:
+        query = select(IncomeCategory).where(IncomeCategory.tg_id == message.from_user.id)
+        result = await session.execute(query)
+        in_categories = result.scalars().all()
+
+    if len(in_categories) < LIMITS["max_number_of_categories"]:
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["income"]["add_income_category"],
+            reply_markup=create_exit_keyboard()
+        )
+        await state.set_state(AddIncomeCategoryState.add_name)
+
+    else:
+        await message.answer(TRANSACTIONS_LEXICON["in_categories_limit"])
 
 
 @router.message(StateFilter(AddIncomeCategoryState.add_name))
@@ -256,7 +268,8 @@ async def get_incomes(callback: CallbackQuery, state: FSMContext):
         incomes = result.scalars().all()
 
     if incomes:
-        pages = len(incomes) // 9 + (len(incomes) % 9 != 0)
+        keyboard_limit = LIMITS["max_elements_in_keyboard"]
+        pages = len(incomes) // keyboard_limit + (len(incomes) % keyboard_limit != 0)
         buttons = [income for income in incomes]
         buttons.sort(key=lambda x: x.date, reverse=True)
 

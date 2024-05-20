@@ -12,6 +12,7 @@ from src.card_operations.keyboards import create_cards_keyboard, create_exit_key
 from src.database.database import async_session
 from src.database.models import Income, IncomeCategory, Card
 from src.services.services import pagination, isValidDate, isValidDescription
+from src.services.settings import LIMITS
 from src.services.states import ShowIncomesState, AddIncomeState
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, \
     LEXICON_COMMANDS as TRANSACTIONS_LEXICON_COMMANDS, print_income_info
@@ -30,7 +31,8 @@ async def get_incomes(message: Message, state: FSMContext):
         incomes = result.scalars().all()
 
     if incomes:
-        pages = len(incomes) // 9 + (len(incomes) % 9 != 0)
+        keyboard_limit = LIMITS["max_elements_in_keyboard"]
+        pages = len(incomes) // keyboard_limit + (len(incomes) % keyboard_limit != 0)
         buttons = [income for income in incomes]
         buttons.sort(key=lambda x: x.date, reverse=True)
 
@@ -61,7 +63,8 @@ async def get_incomes(callback: CallbackQuery, state: FSMContext):
         incomes = result.scalars().all()
 
     if incomes:
-        pages = len(incomes) // 9 + (len(incomes) % 9 != 0)
+        keyboard_limit = LIMITS["max_elements_in_keyboard"]
+        pages = len(incomes) // keyboard_limit + (len(incomes) % keyboard_limit != 0)
         buttons = [income for income in incomes]
         buttons.sort(key=lambda x: x.date, reverse=True)
 
@@ -156,7 +159,8 @@ async def select_income_type(message: Message, state: FSMContext):
         result = await session.execute(query)
         categories = result.scalars().all()
         if categories:
-            pages = len(categories) // 9 + (len(categories) % 9 != 0)
+            keyboard_limit = LIMITS["max_elements_in_keyboard"]
+            pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
             buttons = [category for category in categories]
 
             await state.set_state(AddIncomeState.select_category)
