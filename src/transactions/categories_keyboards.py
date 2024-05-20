@@ -56,6 +56,26 @@ def create_expense_categories_keyboard(categories: list[ExpenseCategory]) -> Inl
     return keyboard
 
 
+def create_add_new_in_category_keyboard() -> InlineKeyboardMarkup:
+    create_in_category_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["create_in_category"],
+        callback_data="start_create_in_category"
+    )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[create_in_category_button]])
+    return keyboard
+
+
+def create_add_new_ex_category_keyboard() -> InlineKeyboardMarkup:
+    create_ex_category_button = InlineKeyboardButton(
+        text=TRANSACTIONS_LEXICON["create_ex_category"],
+        callback_data="start_create_ex_category"
+    )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[create_ex_category_button]])
+    return keyboard
+
+
 def create_in_category_is_create_keyboard(category_id: int) -> InlineKeyboardMarkup:
     current_category_button = InlineKeyboardButton(
         text=TRANSACTIONS_LEXICON["get_current_in_category"],

@@ -13,7 +13,7 @@ from src.services.services import pagination, isValidName
 from src.services.settings import LIMITS
 from src.services.states import ShowExpensesCategoryState, AddExpenseCategoryState, UpdCategoryState, ShowExpensesState
 from src.transactions.categories_keyboards import create_expense_categories_keyboard, \
-    create_category_actions_keyboard, create_ex_category_is_create_keyboard
+    create_category_actions_keyboard, create_ex_category_is_create_keyboard, create_add_new_ex_category_keyboard
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, print_category_info
 from src.transactions.transactions_keyboards import create_expenses_keyboard
 
@@ -46,7 +46,10 @@ async def get_expense_categories(message: Message, state: FSMContext):
             )
         else:
             await state.clear()
-            await message.answer(TRANSACTIONS_LEXICON["expense"]["no_categories"])
+            await message.answer(
+                text=TRANSACTIONS_LEXICON["expense"]["no_categories"],
+                reply_markup=create_add_new_ex_category_keyboard()
+            )
 
 
 @router.callback_query(F.data == "next_page", StateFilter(ShowExpensesCategoryState.show_category))
@@ -109,9 +112,11 @@ async def get_expense_categories(callback: CallbackQuery, state: FSMContext):
                 reply_markup=create_expense_categories_keyboard(cur_buttons)
             )
         else:
-            await callback.message.delete()
             await state.clear()
-            await callback.message.answer(TRANSACTIONS_LEXICON["expense"]["no_categories"])
+            await callback.message.edit_text(
+                text=TRANSACTIONS_LEXICON["expense"]["no_categories"],
+                reply_markup=create_add_new_ex_category_keyboard()
+            )
 
 
 @router.callback_query(F.data[:15] == "get_ex_category", StateFilter(default_state))
@@ -148,6 +153,24 @@ async def add_expense_category(message: Message, state: FSMContext):
 
     else:
         await message.answer(TRANSACTIONS_LEXICON["ex_categories_limit"])
+
+
+@router.callback_query(F.data == "start_create_ex_category", StateFilter(default_state))
+async def add_expense_category(callback: CallbackQuery, state: FSMContext):
+    async with async_session() as session:
+        query = select(ExpenseCategory).where(ExpenseCategory.tg_id == callback.from_user.id)
+        result = await session.execute(query)
+        ex_categories = result.scalars().all()
+
+    if len(ex_categories) < LIMITS["max_number_of_categories"]:
+        await callback.message.edit_text(
+            text=TRANSACTIONS_LEXICON["expense"]["add_expense_category"],
+            reply_markup=create_exit_keyboard()
+        )
+        await state.set_state(AddExpenseCategoryState.add_name)
+
+    else:
+        await callback.message.edit_text(TRANSACTIONS_LEXICON["ex_categories_limit"])
 
 
 @router.message(StateFilter(AddExpenseCategoryState.add_name))
@@ -255,7 +278,7 @@ async def set_upd_ex_category_name(message: Message, state: FSMContext):
 
     else:
         await message.answer(
-            text=TRANSACTIONS_LEXICON["income"]["incorrect_name"],
+            text=TRANSACTIONS_LEXICON["expense"]["incorrect_name"],
             reply_markup=create_exit_keyboard()
         )
 

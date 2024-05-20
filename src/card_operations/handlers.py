@@ -26,7 +26,8 @@ from src.card_operations.keyboards import (
     create_cards_keyboard,
     create_card_actions_keyboard,
     create_card_update_keyboard,
-    create_cancel_update_keyboard, create_card_is_create_keyboard, create_yes_no_delete_keyboard
+    create_cancel_update_keyboard, create_card_is_create_keyboard, create_yes_no_delete_keyboard,
+    create_add_new_card_keyboard
 )
 from src.transactions.transactions_keyboards import create_incomes_keyboard, create_expenses_keyboard
 
@@ -48,7 +49,10 @@ async def get_cards(message: Message, state: FSMContext):
             await state.set_state(ShowCardState.show_card)
         else:
             await state.clear()
-            await message.answer(CARD_OPERATIONS_LEXICON_COMMANDS[message.text]["no_cards"])
+            await message.answer(
+                text=CARD_OPERATIONS_LEXICON_COMMANDS[message.text]["no_cards"],
+                reply_markup=create_add_new_card_keyboard()
+            )
 
 
 @router.callback_query(F.data == "show_cards_list", StateFilter(default_state))
@@ -67,8 +71,10 @@ async def get_cards(callback: CallbackQuery, state: FSMContext):
             await state.set_state(ShowCardState.show_card)
         else:
             await state.clear()
-            await callback.message.delete()
-            await callback.message.answer(CARD_OPERATIONS_LEXICON_COMMANDS[callback.message.text]["no_cards"])
+            await callback.message.edit_text(
+                text=CARD_OPERATIONS_LEXICON_COMMANDS["/cards"]["no_cards"],
+                reply_markup=create_add_new_card_keyboard()
+            )
 
 
 @router.callback_query(F.data[:8] == "get_card", StateFilter(ShowCardState.show_card))
@@ -104,6 +110,26 @@ async def create_card(message: Message, state: FSMContext):
 
     else:
         await message.answer(CARD_OPERATIONS_LEXICON_COMMANDS[message.text]["max_number_of_cards"])
+
+
+@router.callback_query(F.data == "start_create_card", StateFilter(default_state))
+async def create_card(callback: CallbackQuery, state: FSMContext):
+    async with async_session() as session:
+        query = select(Card).where(Card.tg_id == callback.from_user.id)
+        result = await session.execute(query)
+        cards = result.scalars().all()
+
+    if len(cards) < LIMITS["max_number_of_cards"]:
+        await callback.message.edit_text(
+            text=CARD_OPERATIONS_LEXICON_COMMANDS["/add_card"],
+            reply_markup=TypeKeyboard.create_keyboard()
+        )
+
+        await state.set_state(AddCardState.add_type)
+
+    else:
+        await callback.message.delete()
+        await callback.message.answer(CARD_OPERATIONS_LEXICON_COMMANDS["/add_card"]["max_number_of_cards"])
 
 
 @router.callback_query(F.data == "credit_card", StateFilter(AddCardState.add_type))

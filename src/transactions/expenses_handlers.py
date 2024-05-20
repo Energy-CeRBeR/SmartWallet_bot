@@ -8,17 +8,19 @@ from aiogram.fsm.state import default_state
 
 from sqlalchemy import select, update, insert, delete
 
-from src.card_operations.keyboards import create_cards_keyboard, create_exit_keyboard, create_yes_no_delete_keyboard
+from src.card_operations.keyboards import create_cards_keyboard, create_exit_keyboard, create_yes_no_delete_keyboard, \
+    create_add_new_card_keyboard
 from src.database.database import async_session
 from src.database.models import Expense, ExpenseCategory, Card
 from src.services.services import pagination, isValidDate, isValidDescription
 from src.services.settings import LIMITS
 from src.services.states import AddExpenseState, ShowExpensesState
+from src.transactions.categories_keyboards import create_add_new_ex_category_keyboard
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, \
-    LEXICON_COMMANDS as TRANSACTION_LEXICON_COMMANDS, print_expense_info
+    LEXICON_COMMANDS as TRANSACTIONS_LEXICON_COMMANDS, print_expense_info
 from src.transactions.transactions_keyboards import create_expenses_keyboard, create_transaction_edit_keyboard, \
     create_select_category_keyboard, create_exit_transaction_edit_keyboard, create_select_card_keyboard, \
-    create_yes_no_add_keyboard, create_done_keyboard, create_expense_is_create_keyboard
+    create_yes_no_add_keyboard, create_done_keyboard, create_expense_is_create_keyboard, create_add_new_expense_keyboard
 
 router = Router()
 
@@ -49,9 +51,13 @@ async def get_expenses(message: Message, state: FSMContext):
             text=f'{TRANSACTIONS_LEXICON["expense"]["expenses_list"]}. Страница 1 / {pages}',
             reply_markup=create_expenses_keyboard(cur_buttons)
         )
+
     else:
         await state.clear()
-        await message.answer(TRANSACTIONS_LEXICON["expense_transactions"]["no_expenses"])
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["expense_transactions"]["no_expenses"],
+            reply_markup=create_add_new_expense_keyboard()
+        )
 
 
 @router.callback_query(F.data == "show_expenses_list", StateFilter(default_state))
@@ -81,10 +87,13 @@ async def get_expenses(callback: CallbackQuery, state: FSMContext):
             text=f'{TRANSACTIONS_LEXICON["expense"]["expenses_list"]} Страница 1 / {pages}',
             reply_markup=create_expenses_keyboard(cur_buttons)
         )
+
     else:
-        await callback.message.delete()
         await state.clear()
-        await callback.message.answer(TRANSACTIONS_LEXICON["expense_transactions"]["no_expenses"])
+        await callback.message.edit_text(
+            text=TRANSACTIONS_LEXICON["expense_transactions"]["no_expenses"],
+            reply_markup=create_add_new_expense_keyboard()
+        )
 
 
 @router.callback_query(F.data == "next_page", StateFilter(ShowExpensesState.show_expenses))
@@ -153,7 +162,7 @@ async def get_expense_info(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(Command(commands="add_expense"), StateFilter(default_state))
-async def select_expense_type(message: Message, state: FSMContext):
+async def add_expense(message: Message, state: FSMContext):
     async with async_session() as session:
         query = select(ExpenseCategory).where(ExpenseCategory.tg_id == message.from_user.id)
         result = await session.execute(query)
@@ -174,12 +183,48 @@ async def select_expense_type(message: Message, state: FSMContext):
 
             cur_buttons = pagination(buttons, 0)
             await message.answer(
-                text=f"{TRANSACTION_LEXICON_COMMANDS[message.text]} Страница 1 / {pages}",
+                text=f"{TRANSACTIONS_LEXICON_COMMANDS[message.text]} Страница 1 / {pages}",
                 reply_markup=create_select_category_keyboard(cur_buttons)
             )
 
         else:
-            await message.answer(TRANSACTIONS_LEXICON["expense_transactions"]["no_categories"])
+            await message.answer(
+                text=TRANSACTIONS_LEXICON["expense_transactions"]["no_categories"],
+                reply_markup=create_add_new_ex_category_keyboard()
+            )
+
+
+@router.callback_query(F.data == "start_create_expense", StateFilter(default_state))
+async def add_expense(callback: CallbackQuery, state: FSMContext):
+    async with async_session() as session:
+        query = select(ExpenseCategory).where(ExpenseCategory.tg_id == callback.from_user.id)
+        result = await session.execute(query)
+        categories = result.scalars().all()
+        if categories:
+            keyboard_limit = LIMITS["max_elements_ex_keyboard"]
+            pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
+            buttons = [category for category in categories]
+
+            await state.set_state(AddExpenseState.select_category)
+            await state.update_data(
+                page=0,
+                pages=pages,
+                ex_categories=buttons,
+                category_type=Expense,
+                category_type_str="expense"
+            )
+
+            cur_buttons = pagination(buttons, 0)
+            await callback.message.edit_text(
+                text=f"{TRANSACTIONS_LEXICON_COMMANDS['/add_expense']} Страница 1 / {pages}",
+                reply_markup=create_select_category_keyboard(cur_buttons)
+            )
+
+        else:
+            await callback.message.edit_text(
+                text=TRANSACTIONS_LEXICON["expense_transactions"]["no_categories"],
+                reply_markup=create_add_new_ex_category_keyboard()
+            )
 
 
 @router.callback_query(F.data == "next_page", StateFilter(AddExpenseState.select_category))
@@ -192,7 +237,7 @@ async def goto_next_ex_categories_page(callback: CallbackQuery, state: FSMContex
 
     if 0 <= cur_page < pages and buttons:
         await callback.message.edit_text(
-            text=f'{TRANSACTION_LEXICON_COMMANDS["/add_expense"]} Страница {cur_page + 1} / {pages}',
+            text=f'{TRANSACTIONS_LEXICON_COMMANDS["/add_expense"]} Страница {cur_page + 1} / {pages}',
             reply_markup=create_select_category_keyboard(buttons)
         )
 
@@ -209,7 +254,7 @@ async def goto_back_ex_categories_page(callback: CallbackQuery, state: FSMContex
 
     if 0 <= cur_page < pages and buttons:
         await callback.message.edit_text(
-            text=f'{TRANSACTION_LEXICON_COMMANDS["/add_expense"]} Страница {cur_page + 1} / {pages}',
+            text=f'{TRANSACTIONS_LEXICON_COMMANDS["/add_expense"]} Страница {cur_page + 1} / {pages}',
             reply_markup=create_select_category_keyboard(buttons)
         )
 
@@ -234,8 +279,11 @@ async def select_card(callback: CallbackQuery, state: FSMContext):
             await state.set_state(AddExpenseState.add_date)
 
         else:
-            await callback.message.answer(TRANSACTIONS_LEXICON["no_cards"])
             await state.clear()
+            await callback.message.edit_text(
+                text=TRANSACTIONS_LEXICON["no_cards"],
+                reply_markup=create_add_new_card_keyboard()
+            )
 
 
 @router.callback_query(F.data[:8] == "add_date", StateFilter(AddExpenseState.add_date))

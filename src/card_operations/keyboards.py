@@ -14,6 +14,16 @@ def create_exit_keyboard() -> InlineKeyboardMarkup:
     return keyboard
 
 
+def create_add_new_card_keyboard() -> InlineKeyboardMarkup:
+    create_card_button = InlineKeyboardButton(
+        text=CARD_OPERATIONS_LEXICON["create_card"],
+        callback_data="start_create_card"
+    )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[create_card_button]])
+    return keyboard
+
+
 def create_cancel_update_keyboard() -> InlineKeyboardMarkup:
     back_button = InlineKeyboardButton(
         text=CARD_OPERATIONS_LEXICON["exit_update"],

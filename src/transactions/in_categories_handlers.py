@@ -13,7 +13,7 @@ from src.services.services import pagination, isValidName
 from src.services.settings import LIMITS
 from src.services.states import ShowIncomesCategoryState, AddIncomeCategoryState, UpdCategoryState, ShowIncomesState
 from src.transactions.categories_keyboards import create_income_categories_keyboard, create_category_actions_keyboard, \
-    create_in_category_is_create_keyboard
+    create_in_category_is_create_keyboard, create_add_new_in_category_keyboard
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON, print_category_info
 from src.transactions.transactions_keyboards import create_incomes_keyboard
 
@@ -46,7 +46,10 @@ async def get_income_categories(message: Message, state: FSMContext):
             )
         else:
             await state.clear()
-            await message.answer(TRANSACTIONS_LEXICON["income"]["no_categories"])
+            await message.answer(
+                text=TRANSACTIONS_LEXICON["income"]["no_categories"],
+                reply_markup=create_add_new_in_category_keyboard()
+            )
 
 
 @router.callback_query(F.data == "next_page", StateFilter(ShowIncomesCategoryState.show_category))
@@ -109,9 +112,11 @@ async def get_income_categories(callback: CallbackQuery, state: FSMContext):
                 reply_markup=create_income_categories_keyboard(cur_buttons)
             )
         else:
-            await callback.message.delete()
             await state.clear()
-            await callback.message.answer(TRANSACTIONS_LEXICON["income"]["no_categories"])
+            await callback.message.edit_text(
+                text=TRANSACTIONS_LEXICON["income"]["no_categories"],
+                reply_markup=create_add_new_in_category_keyboard()
+            )
 
 
 @router.callback_query(F.data[:15] == "get_in_category", StateFilter(default_state))
@@ -148,6 +153,24 @@ async def add_income_category(message: Message, state: FSMContext):
 
     else:
         await message.answer(TRANSACTIONS_LEXICON["in_categories_limit"])
+
+
+@router.callback_query(F.data == "start_create_in_category", StateFilter(default_state))
+async def add_income_category(callback: CallbackQuery, state: FSMContext):
+    async with async_session() as session:
+        query = select(IncomeCategory).where(IncomeCategory.tg_id == callback.from_user.id)
+        result = await session.execute(query)
+        in_categories = result.scalars().all()
+
+    if len(in_categories) < LIMITS["max_number_of_categories"]:
+        await callback.message.edit_text(
+            text=TRANSACTIONS_LEXICON["income"]["add_income_category"],
+            reply_markup=create_exit_keyboard()
+        )
+        await state.set_state(AddIncomeCategoryState.add_name)
+
+    else:
+        await callback.message.edit_text(TRANSACTIONS_LEXICON["in_categories_limit"])
 
 
 @router.message(StateFilter(AddIncomeCategoryState.add_name))
