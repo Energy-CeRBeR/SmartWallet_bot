@@ -5,7 +5,8 @@ from aiogram.fsm.state import default_state
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy import select, insert, delete, update
 
-from src.card_operations.keyboards import create_exit_keyboard, create_exit_show_card_keyboard
+from src.card_operations.keyboards import create_exit_keyboard, create_exit_show_card_keyboard, \
+    create_yes_no_delete_keyboard
 from src.database.database import async_session
 from src.database.models import IncomeCategory, Income
 from src.services.services import pagination, isValidName
@@ -169,14 +170,43 @@ async def set_income_category(message: Message, state: FSMContext):
 @router.callback_query(F.data[:12] == "del_category", StateFilter(ShowIncomesCategoryState.show_category))
 async def del_category(callback: CallbackQuery, state: FSMContext):
     category_id = int(callback.data[14:])
+
+    await state.update_data(category_id=category_id)
+    await state.set_state(UpdCategoryState.del_in_category)
+    await callback.message.edit_text(
+        text=TRANSACTIONS_LEXICON["edit_income"]["confirm_del_category"],
+        reply_markup=create_yes_no_delete_keyboard()
+    )
+
+
+@router.callback_query(F.data == "NO", StateFilter(UpdCategoryState.del_in_category))
+async def no_delete_card(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    category_id = data["category_id"]
+
+    await state.clear()
+    await callback.message.edit_text(
+        text=TRANSACTIONS_LEXICON["edit_income"]["cancel_del_category"],
+        reply_markup=create_in_category_is_create_keyboard(category_id)
+    )
+
+
+@router.callback_query(F.data == "YES", StateFilter(UpdCategoryState.del_in_category))
+async def yes_delete_card(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    category_id = data["category_id"]
     async with async_session() as session:
-        to_delete = delete(IncomeCategory).where(IncomeCategory.id == category_id)
-        await session.execute(to_delete)
+        to_delete_category = delete(IncomeCategory).where(IncomeCategory.id == category_id)
+        to_delete_income = delete(Income).where(Income.category_id == category_id)
+
+        await session.execute(to_delete_category)
+        await session.execute(to_delete_income)
+
         await session.commit()
 
     await state.clear()
     await callback.message.delete()
-    await callback.message.answer(TRANSACTIONS_LEXICON["successful_del_category"])
+    await callback.message.answer(TRANSACTIONS_LEXICON["edit_income"]["success_del_category"])
 
 
 @router.callback_query(F.data[:12] == "upd_category", StateFilter(ShowIncomesCategoryState.show_category))
@@ -186,14 +216,14 @@ async def upd_category_name(callback: CallbackQuery, state: FSMContext):
         category_type=IncomeCategory,
         category_id=category_id
     )
-    await state.set_state(UpdCategoryState.upd_income_name)
+    await state.set_state(UpdCategoryState.upd_in_category_name)
     await callback.message.edit_text(
         text=TRANSACTIONS_LEXICON["update_category_name"],
         reply_markup=create_exit_show_card_keyboard("exit_update")
     )
 
 
-@router.message(StateFilter(UpdCategoryState.upd_income_name))
+@router.message(StateFilter(UpdCategoryState.upd_in_category_name))
 async def set_upd_in_category_name(message: Message, state: FSMContext):
     new_category_name = message.text.strip()
     if isValidName(new_category_name):
@@ -245,5 +275,7 @@ async def get_incomes(callback: CallbackQuery, state: FSMContext):
 
     else:
         await state.clear()
-        await callback.message.delete()
-        await callback.message.answer(TRANSACTIONS_LEXICON["income_transactions"]["no_incomes"])
+        await callback.message.edit_text(
+            text=TRANSACTIONS_LEXICON["income_transactions"]["no_incomes"],
+            reply_markup=create_in_category_is_create_keyboard(category_id)
+        )
