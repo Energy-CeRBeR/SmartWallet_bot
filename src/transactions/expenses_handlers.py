@@ -63,10 +63,8 @@ async def get_expenses(message: Message, state: FSMContext):
 @router.callback_query(F.data == "show_expenses_list", StateFilter(default_state))
 @router.callback_query(F.data == "show_expenses_list", StateFilter(ShowExpensesState.show_expenses))
 async def get_expenses(callback: CallbackQuery, state: FSMContext):
-    async with async_session() as session:
-        query = select(Expense).where(Expense.tg_id == callback.from_user.id)
-        result = await session.execute(query)
-        expenses = result.scalars().all()
+    data = await state.get_data()
+    expenses = data["expenses"]
 
     if expenses:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]

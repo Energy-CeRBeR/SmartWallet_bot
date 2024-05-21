@@ -63,10 +63,8 @@ async def get_incomes(message: Message, state: FSMContext):
 @router.callback_query(F.data == "show_incomes_list", StateFilter(default_state))
 @router.callback_query(F.data == "show_incomes_list", StateFilter(ShowIncomesState.show_incomes))
 async def get_incomes(callback: CallbackQuery, state: FSMContext):
-    async with async_session() as session:
-        query = select(Income).where(Income.tg_id == callback.from_user.id)
-        result = await session.execute(query)
-        incomes = result.scalars().all()
+    data = await state.get_data()
+    incomes = data["incomes"]
 
     if incomes:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
