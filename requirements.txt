@@ -6,3 +6,4 @@ sqlalchemy
 aiosqlite
 pydantic
 redis
+aioredis

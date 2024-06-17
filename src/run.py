@@ -1,7 +1,7 @@
 import asyncio
 
 from aiogram import Dispatcher, Bot
-from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.storage.redis import RedisStorage, Redis
 
 from config_data.config import Config, load_config
 
@@ -16,7 +16,8 @@ from src.transactions.expenses_handlers import router as expenses_transactions_r
 async def main():
     config: Config = load_config(".env")
     bot = Bot(token=config.tg_bot.token, parse_mode="HTML")
-    storage = MemoryStorage()
+    redis = Redis(host=config.tg_bot.redis_host)
+    storage = RedisStorage(redis=redis)
     dp = Dispatcher(storage=storage)
 
     dp.include_routers(
