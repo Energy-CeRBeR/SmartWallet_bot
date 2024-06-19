@@ -12,7 +12,8 @@ from src.card_operations.keyboards import create_cards_keyboard, create_exit_key
     create_add_new_card_keyboard
 from src.database.database import async_session
 from src.database.models import Expense, ExpenseCategory, Card
-from src.services.services import pagination, isValidDate, isValidDescription
+from src.services.services import pagination, isValidDate, isValidDescription, unpack_expense_model, \
+    unpack_card_model, unpack_ex_category_model
 from src.services.settings import LIMITS
 from src.services.states import AddExpenseState, ShowExpensesState
 from src.transactions.categories_keyboards import create_add_new_ex_category_keyboard
@@ -35,7 +36,7 @@ async def get_expenses(message: Message, state: FSMContext):
     if expenses:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(expenses) // keyboard_limit + (len(expenses) % keyboard_limit != 0)
-        buttons = [expense for expense in expenses]
+        buttons = [unpack_expense_model(expense) for expense in expenses]
         buttons.sort(key=lambda x: x.date, reverse=True)
 
         await state.set_state(ShowExpensesState.show_expenses)
@@ -65,11 +66,10 @@ async def get_expenses(message: Message, state: FSMContext):
 async def get_expenses(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     expenses = data["expenses"]
-
     if expenses:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(expenses) // keyboard_limit + (len(expenses) % keyboard_limit != 0)
-        buttons = [expense for expense in expenses]
+        buttons = [unpack_expense_model(expense) for expense in expenses]
         buttons.sort(key=lambda x: x.date, reverse=True)
 
         await state.set_state(ShowExpensesState.show_expenses)
@@ -149,9 +149,9 @@ async def get_expense_info(callback: CallbackQuery, state: FSMContext):
 
     description = expense.description if expense.description else TRANSACTIONS_LEXICON["expense_info"]["no_description"]
     await state.update_data(
-        expense=expense,
-        card=card,
-        expense_category=expense_category
+        expense=unpack_expense_model(expense),
+        card=unpack_card_model(card),
+        expense_category=unpack_ex_category_model(expense_category)
     )
     await callback.message.edit_text(
         text=print_expense_info(expense, card, expense_category, description),
@@ -168,14 +168,13 @@ async def add_expense(message: Message, state: FSMContext):
         if categories:
             keyboard_limit = LIMITS["max_elements_in_keyboard"]
             pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
-            buttons = [category for category in categories]
+            buttons = [unpack_ex_category_model(category) for category in categories]
 
             await state.set_state(AddExpenseState.select_category)
             await state.update_data(
                 page=0,
                 pages=pages,
                 ex_categories=buttons,
-                category_type=Expense,
                 category_type_str="expense"
             )
 
@@ -201,14 +200,13 @@ async def add_expense(callback: CallbackQuery, state: FSMContext):
         if categories:
             keyboard_limit = LIMITS["max_elements_ex_keyboard"]
             pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
-            buttons = [category for category in categories]
+            buttons = [unpack_ex_category_model(category) for category in categories]
 
             await state.set_state(AddExpenseState.select_category)
             await state.update_data(
                 page=0,
                 pages=pages,
                 ex_categories=buttons,
-                category_type=Expense,
                 category_type_str="expense"
             )
 

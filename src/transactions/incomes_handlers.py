@@ -12,7 +12,8 @@ from src.card_operations.keyboards import create_cards_keyboard, create_exit_key
     create_add_new_card_keyboard
 from src.database.database import async_session
 from src.database.models import Income, IncomeCategory, Card
-from src.services.services import pagination, isValidDate, isValidDescription
+from src.services.services import pagination, isValidDate, isValidDescription, unpack_income_model, unpack_card_model, \
+    unpack_in_category_model
 from src.services.settings import LIMITS
 from src.services.states import ShowIncomesState, AddIncomeState
 from src.transactions.categories_keyboards import create_add_new_in_category_keyboard
@@ -35,7 +36,7 @@ async def get_incomes(message: Message, state: FSMContext):
     if incomes:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(incomes) // keyboard_limit + (len(incomes) % keyboard_limit != 0)
-        buttons = [income for income in incomes]
+        buttons = [unpack_income_model(income) for income in incomes]
         buttons.sort(key=lambda x: x.date, reverse=True)
 
         await state.set_state(ShowIncomesState.show_incomes)
@@ -65,11 +66,10 @@ async def get_incomes(message: Message, state: FSMContext):
 async def get_incomes(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     incomes = data["incomes"]
-
     if incomes:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(incomes) // keyboard_limit + (len(incomes) % keyboard_limit != 0)
-        buttons = [income for income in incomes]
+        buttons = [unpack_income_model(income) for income in incomes]
         buttons.sort(key=lambda x: x.date, reverse=True)
 
         await state.set_state(ShowIncomesState.show_incomes)
@@ -149,9 +149,9 @@ async def get_income_info(callback: CallbackQuery, state: FSMContext):
 
     description = income.description if income.description else TRANSACTIONS_LEXICON["income_info"]["no_description"]
     await state.update_data(
-        income=income,
-        card=card,
-        income_category=income_category
+        income=unpack_income_model(income),
+        card=unpack_card_model(card),
+        income_category=unpack_in_category_model(income_category)
     )
     await callback.message.edit_text(
         text=print_income_info(income, income_category, card, description),
@@ -168,14 +168,13 @@ async def add_income(message: Message, state: FSMContext):
         if categories:
             keyboard_limit = LIMITS["max_elements_in_keyboard"]
             pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
-            buttons = [category for category in categories]
+            buttons = [unpack_in_category_model(category) for category in categories]
 
             await state.set_state(AddIncomeState.select_category)
             await state.update_data(
                 page=0,
                 pages=pages,
                 in_categories=buttons,
-                category_type=Income,
                 category_type_str="income"
             )
 
@@ -201,14 +200,13 @@ async def add_income(callback: CallbackQuery, state: FSMContext):
         if categories:
             keyboard_limit = LIMITS["max_elements_in_keyboard"]
             pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
-            buttons = [category for category in categories]
+            buttons = [unpack_in_category_model(category) for category in categories]
 
             await state.set_state(AddIncomeState.select_category)
             await state.update_data(
                 page=0,
                 pages=pages,
                 in_categories=buttons,
-                category_type=Income,
                 category_type_str="income"
             )
 
