@@ -471,7 +471,7 @@ async def change_expense_category(callback: CallbackQuery, state: FSMContext):
 async def set_new_category(callback: CallbackQuery, state: FSMContext):
     category_id = int(callback.data[12:])
     data = await state.get_data()
-    expense_id = data["expense"].id
+    expense_id = data["expense"]["id"]
     async with (async_session() as session):
         stmt = update(Expense).where(Expense.id == expense_id).values(category_id=category_id)
         await session.execute(stmt)
@@ -504,16 +504,16 @@ async def set_new_card(callback: CallbackQuery, state: FSMContext):
     expense = data["expense"]
 
     async with (async_session() as session):
-        query = select(Card).where(Card.id == expense.card_id)
+        query = select(Card).where(Card.id == expense["card_id"])
         result = await session.execute(query)
         card = result.scalars().first()
 
-        new_balance = card.balance + expense.amount
+        new_balance = card.balance + expense["amount"]
         stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
         await session.execute(stmt)
         await session.commit()
 
-        stmt = update(Expense).where(Expense.id == expense.id).values(card_id=card_id)
+        stmt = update(Expense).where(Expense.id == expense["id"]).values(card_id=card_id)
         await session.execute(stmt)
         await session.commit()
 
@@ -521,7 +521,7 @@ async def set_new_card(callback: CallbackQuery, state: FSMContext):
         result = await session.execute(query)
         card = result.scalars().first()
 
-        new_balance = card.balance - expense.amount
+        new_balance = card.balance - expense["amount"]
         stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
         await session.execute(stmt)
         await session.commit()
@@ -550,15 +550,15 @@ async def set_new_expense_amount(message: Message, state: FSMContext):
             expense = data["expense"]
             card = data["card"]
 
-            d = amount - expense.amount
-            new_balance = card.balance - d
-            card.balance = new_balance
+            d = amount - expense["amount"]
+            new_balance = card["balance"] - d
+            card["balance"] = new_balance
             async with (async_session() as session):
-                stmt = update(Expense).where(Expense.id == expense.id).values(amount=amount)
+                stmt = update(Expense).where(Expense.id == expense["id"]).values(amount=amount)
                 await session.execute(stmt)
                 await session.commit()
 
-                stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
+                stmt = update(Card).where(Card.id == card["id"]).values(balance=new_balance)
                 await session.execute(stmt)
                 await session.commit()
 
@@ -595,7 +595,7 @@ async def set_new_expense_date(message: Message, state: FSMContext):
         data = await state.get_data()
         expense = data["expense"]
         async with async_session() as session:
-            stmt = update(Expense).where(Expense.id == expense.id).values(date=date)
+            stmt = update(Expense).where(Expense.id == expense["id"]).values(date=date)
             await session.execute(stmt)
             await session.commit()
 
@@ -625,7 +625,7 @@ async def set_new_expense_description(message: Message, state: FSMContext):
         data = await state.get_data()
         expense = data["expense"]
         async with async_session() as session:
-            stmt = update(Expense).where(Expense.id == expense.id).values(description=description)
+            stmt = update(Expense).where(Expense.id == expense["id"]).values(description=description)
             await session.execute(stmt)
             await session.commit()
 
@@ -666,12 +666,12 @@ async def yes_delete_card(callback: CallbackQuery, state: FSMContext):
     expense = data["expense"]
 
     async with async_session() as session:
-        to_delete_expense = delete(Expense).where(Expense.id == expense.id)
+        to_delete_expense = delete(Expense).where(Expense.id == expense["id"])
         await session.execute(to_delete_expense)
         await session.commit()
 
-        amount = expense.amount
-        stmt = select(Card).where(Card.id == expense.card_id)
+        amount = expense["amount"]
+        stmt = select(Card).where(Card.id == expense["card_id"])
         result = await session.execute(stmt)
         card = result.scalars().first()
         new_balance = card.balance + amount

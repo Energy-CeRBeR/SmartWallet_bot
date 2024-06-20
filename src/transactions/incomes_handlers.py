@@ -471,7 +471,7 @@ async def change_income_category(callback: CallbackQuery, state: FSMContext):
 async def set_new_category(callback: CallbackQuery, state: FSMContext):
     category_id = int(callback.data[12:])
     data = await state.get_data()
-    income_id = data["income"].id
+    income_id = data["income"]["id"]
     async with (async_session() as session):
         stmt = update(Income).where(Income.id == income_id).values(category_id=category_id)
         await session.execute(stmt)
@@ -550,15 +550,15 @@ async def set_new_income_amount(message: Message, state: FSMContext):
             income = data["income"]
             card = data["card"]
 
-            d = amount - income.amount
-            new_balance = card.balance + d
-            card.balance = new_balance
+            d = amount - income["amount"]
+            new_balance = card["balance"] + d
+            card["balance"] = new_balance
             async with (async_session() as session):
-                stmt = update(Income).where(Income.id == income.id).values(amount=amount)
+                stmt = update(Income).where(Income.id == income["id"]).values(amount=amount)
                 await session.execute(stmt)
                 await session.commit()
 
-                stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
+                stmt = update(Card).where(Card.id == card["id"]).values(balance=new_balance)
                 await session.execute(stmt)
                 await session.commit()
 
@@ -595,7 +595,7 @@ async def set_new_income_date(message: Message, state: FSMContext):
         data = await state.get_data()
         income = data["income"]
         async with async_session() as session:
-            stmt = update(Income).where(Income.id == income.id).values(date=date)
+            stmt = update(Income).where(Income.id == income["id"]).values(date=date)
             await session.execute(stmt)
             await session.commit()
 
@@ -625,7 +625,7 @@ async def set_new_income_description(message: Message, state: FSMContext):
         data = await state.get_data()
         income = data["income"]
         async with async_session() as session:
-            stmt = update(Income).where(Income.id == income.id).values(description=description)
+            stmt = update(Income).where(Income.id == income["id"]).values(description=description)
             await session.execute(stmt)
             await session.commit()
 
@@ -666,12 +666,12 @@ async def yes_delete_card(callback: CallbackQuery, state: FSMContext):
     income = data["income"]
 
     async with async_session() as session:
-        to_delete_income = delete(Income).where(Income.id == income.id)
+        to_delete_income = delete(Income).where(Income.id == income["id"])
         await session.execute(to_delete_income)
         await session.commit()
 
-        amount = income.amount
-        stmt = select(Card).where(Card.id == income.card_id)
+        amount = income["amount"]
+        stmt = select(Card).where(Card.id == income["card_id"])
         result = await session.execute(stmt)
         card = result.scalars().first()
         new_balance = card.balance - amount
