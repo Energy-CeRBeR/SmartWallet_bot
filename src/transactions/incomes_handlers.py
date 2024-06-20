@@ -458,7 +458,7 @@ async def change_income_category(callback: CallbackQuery, state: FSMContext):
         result = await session.execute(query)
         categories = result.scalars().all()
 
-    buttons = [category for category in categories]
+    buttons = [unpack_in_category_model(category) for category in categories]
 
     await state.set_state(ShowIncomesState.set_new_category)
     await callback.message.edit_text(
@@ -479,7 +479,10 @@ async def set_new_category(callback: CallbackQuery, state: FSMContext):
 
     await callback.message.delete()
     await state.set_state(ShowIncomesState.show_incomes)
-    await callback.message.answer(TRANSACTIONS_LEXICON["edit_income"]["category_is_update"])
+    await callback.message.answer(
+        text=TRANSACTIONS_LEXICON["edit_income"]["category_is_update"],
+        reply_markup=create_income_is_create_keyboard(income_id)
+    )
 
 
 @router.callback_query(F.data == "edit_in_card", StateFilter(ShowIncomesState.show_incomes))
@@ -508,7 +511,7 @@ async def set_new_card(callback: CallbackQuery, state: FSMContext):
         result = await session.execute(query)
         card = result.scalars().first()
 
-        new_balance = card.balance - income["card_id"]
+        new_balance = card.balance - income["amount"]
         stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
         await session.execute(stmt)
         await session.commit()
@@ -528,7 +531,10 @@ async def set_new_card(callback: CallbackQuery, state: FSMContext):
 
     await callback.message.delete()
     await state.set_state(ShowIncomesState.show_incomes)
-    await callback.message.answer(TRANSACTIONS_LEXICON["edit_income"]["card_is_update"])
+    await callback.message.answer(
+        text=TRANSACTIONS_LEXICON["edit_income"]["card_is_update"],
+        reply_markup=create_income_is_create_keyboard(income["id"])
+    )
 
 
 @router.callback_query(F.data == "edit_in_amount", StateFilter(ShowIncomesState.show_incomes))
@@ -563,8 +569,10 @@ async def set_new_income_amount(message: Message, state: FSMContext):
                 await session.commit()
 
             await state.set_state(ShowIncomesState.show_incomes)
-            await message.answer(TRANSACTIONS_LEXICON["edit_income"]["amount_is_update"])
-
+            await message.answer(
+                text=TRANSACTIONS_LEXICON["edit_income"]["amount_is_update"],
+                reply_markup=create_income_is_create_keyboard(income["id"])
+            )
         else:
             await message.answer(
                 text=TRANSACTIONS_LEXICON["income_transactions"]["incorrect_amount"],
@@ -600,7 +608,10 @@ async def set_new_income_date(message: Message, state: FSMContext):
             await session.commit()
 
         await state.set_state(ShowIncomesState.show_incomes)
-        await message.answer(TRANSACTIONS_LEXICON["edit_income"]["date_is_update"])
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["edit_income"]["date_is_update"],
+            reply_markup=create_income_is_create_keyboard(income["id"])
+        )
 
     else:
         await message.answer(
@@ -630,7 +641,10 @@ async def set_new_income_description(message: Message, state: FSMContext):
             await session.commit()
 
         await state.set_state(ShowIncomesState.show_incomes)
-        await message.answer(TRANSACTIONS_LEXICON["edit_income"]["description_is_update"])
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["edit_income"]["description_is_update"],
+            reply_markup=create_income_is_create_keyboard(income["id"])
+        )
 
     else:
         await message.answer(
