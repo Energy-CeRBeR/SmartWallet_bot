@@ -15,6 +15,7 @@ commands_dict = {
 
 LIMITS: dict[str, int] = {
     "max_elements_in_keyboard": 10,
+    "max_elements_ex_keyboard": 10,
     "max_number_of_cards": 10,
     "max_number_of_categories": 100,
 }
