@@ -37,7 +37,7 @@ async def get_incomes(message: Message, state: FSMContext):
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(incomes) // keyboard_limit + (len(incomes) % keyboard_limit != 0)
         buttons = [unpack_income_model(income) for income in incomes]
-        buttons.sort(key=lambda x: x.date, reverse=True)
+        buttons.sort(key=lambda x: datetime.strptime(x["date"], '%Y-%m-%d').date(), reverse=True)
 
         await state.set_state(ShowIncomesState.show_incomes)
         await state.update_data(
@@ -65,12 +65,19 @@ async def get_incomes(message: Message, state: FSMContext):
 @router.callback_query(F.data == "show_incomes_list", StateFilter(ShowIncomesState.show_incomes))
 async def get_incomes(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    incomes = data["incomes"]
+    try:
+        incomes = data["incomes"]
+    except KeyError:
+        async with async_session() as session:
+            query = select(Income).where(Income.tg_id == callback.from_user.id)
+            result = await session.execute(query)
+            incomes = result.scalars().all()
+
     if incomes:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(incomes) // keyboard_limit + (len(incomes) % keyboard_limit != 0)
         buttons = [unpack_income_model(income) for income in incomes]
-        buttons.sort(key=lambda x: x.date, reverse=True)
+        buttons.sort(key=lambda x: datetime.strptime(x["date"], '%Y-%m-%d').date(), reverse=True)
 
         await state.set_state(ShowIncomesState.show_incomes)
         await state.update_data(
@@ -497,16 +504,16 @@ async def set_new_card(callback: CallbackQuery, state: FSMContext):
     income = data["income"]
 
     async with (async_session() as session):
-        query = select(Card).where(Card.id == income.card_id)
+        query = select(Card).where(Card.id == income["card_id"])
         result = await session.execute(query)
         card = result.scalars().first()
 
-        new_balance = card.balance - income.amount
+        new_balance = card.balance - income["card_id"]
         stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
         await session.execute(stmt)
         await session.commit()
 
-        stmt = update(Income).where(Income.id == income.id).values(card_id=card_id)
+        stmt = update(Income).where(Income.id == income["id"]).values(card_id=card_id)
         await session.execute(stmt)
         await session.commit()
 
@@ -514,7 +521,7 @@ async def set_new_card(callback: CallbackQuery, state: FSMContext):
         result = await session.execute(query)
         card = result.scalars().first()
 
-        new_balance = card.balance + income.amount
+        new_balance = card.balance + income["amount"]
         stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
         await session.execute(stmt)
         await session.commit()

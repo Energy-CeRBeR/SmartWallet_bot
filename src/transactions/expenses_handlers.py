@@ -37,7 +37,7 @@ async def get_expenses(message: Message, state: FSMContext):
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(expenses) // keyboard_limit + (len(expenses) % keyboard_limit != 0)
         buttons = [unpack_expense_model(expense) for expense in expenses]
-        buttons.sort(key=lambda x: x.date, reverse=True)
+        buttons.sort(key=lambda x: datetime.strptime(x["date"], '%Y-%m-%d').date(), reverse=True)
 
         await state.set_state(ShowExpensesState.show_expenses)
         await state.update_data(
@@ -65,12 +65,19 @@ async def get_expenses(message: Message, state: FSMContext):
 @router.callback_query(F.data == "show_expenses_list", StateFilter(ShowExpensesState.show_expenses))
 async def get_expenses(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    expenses = data["expenses"]
+    try:
+        expenses = data["expenses"]
+    except KeyError:
+        async with async_session() as session:
+            query = select(Expense).where(Expense.tg_id == callback.from_user.id)
+            result = await session.execute(query)
+            expenses = result.scalars().all()
+
     if expenses:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(expenses) // keyboard_limit + (len(expenses) % keyboard_limit != 0)
         buttons = [unpack_expense_model(expense) for expense in expenses]
-        buttons.sort(key=lambda x: x.date, reverse=True)
+        buttons.sort(key=lambda x: datetime.strptime(x["date"], '%Y-%m-%d').date(), reverse=True)
 
         await state.set_state(ShowExpensesState.show_expenses)
         await state.update_data(

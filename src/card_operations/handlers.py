@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from aiogram import Router, F
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -352,7 +354,7 @@ async def get_incomes(callback: CallbackQuery, state: FSMContext):
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(incomes) // keyboard_limit + (len(incomes) % keyboard_limit != 0)
         buttons = [unpack_income_model(income) for income in incomes]
-        buttons.sort(key=lambda x: x.date, reverse=True)
+        buttons.sort(key=lambda x: datetime.strptime(x["date"], '%Y-%m-%d').date(), reverse=True)
 
         await state.set_state(ShowIncomesState.show_incomes)
         await state.update_data(
@@ -388,7 +390,7 @@ async def get_expenses(callback: CallbackQuery, state: FSMContext):
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(expenses) // keyboard_limit + (len(expenses) % keyboard_limit != 0)
         buttons = [unpack_expense_model(expense) for expense in expenses]
-        buttons.sort(key=lambda x: x.date, reverse=True)
+        buttons.sort(key=lambda x: datetime.strptime(x["date"], '%Y-%m-%d').date(), reverse=True)
 
         await state.set_state(ShowExpensesState.show_expenses)
         await state.update_data(
