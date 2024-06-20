@@ -4,12 +4,12 @@ from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
 from src.database.models import IncomeCategory, ExpenseCategory
 
 
-def create_income_categories_keyboard(categories: list[IncomeCategory]) -> InlineKeyboardMarkup:
+def create_income_categories_keyboard(categories: list[dict]) -> InlineKeyboardMarkup:
     buttons = list()
     for category in categories:
         cur_category = InlineKeyboardButton(
-            text=category.name,
-            callback_data=f"get_in_category{category.id}"
+            text=category['name'],
+            callback_data=f"get_in_category{category['id']}"
         )
         buttons.append([cur_category])
 
@@ -30,12 +30,12 @@ def create_income_categories_keyboard(categories: list[IncomeCategory]) -> Inlin
     return keyboard
 
 
-def create_expense_categories_keyboard(categories: list[ExpenseCategory]) -> InlineKeyboardMarkup:
+def create_expense_categories_keyboard(categories: list[dict]) -> InlineKeyboardMarkup:
     buttons = list()
     for category in categories:
         cur_category = InlineKeyboardButton(
-            text=category.name,
-            callback_data=f"get_ex_category{category.id}"
+            text=category['name'],
+            callback_data=f"get_ex_category{category['id']}"
         )
         buttons.append([cur_category])
 

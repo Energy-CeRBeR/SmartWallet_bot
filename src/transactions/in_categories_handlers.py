@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from aiogram import F, Router
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -9,7 +11,7 @@ from src.card_operations.keyboards import create_exit_keyboard, create_exit_show
     create_yes_no_delete_keyboard
 from src.database.database import async_session
 from src.database.models import IncomeCategory, Income
-from src.services.services import pagination, isValidName
+from src.services.services import pagination, isValidName, unpack_in_category_model, unpack_income_model
 from src.services.settings import LIMITS
 from src.services.states import ShowIncomesCategoryState, AddIncomeCategoryState, UpdCategoryState, ShowIncomesState
 from src.transactions.categories_keyboards import create_income_categories_keyboard, create_category_actions_keyboard, \
@@ -29,7 +31,7 @@ async def get_income_categories(message: Message, state: FSMContext):
         if categories:
             keyboard_limit = LIMITS["max_elements_in_keyboard"]
             pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
-            buttons = [category for category in categories]
+            buttons = [unpack_in_category_model(category) for category in categories]
 
             await state.set_state(ShowIncomesCategoryState.show_category)
             await state.update_data(
@@ -96,7 +98,7 @@ async def get_income_categories(callback: CallbackQuery, state: FSMContext):
         if categories:
             keyboard_limit = LIMITS["max_elements_in_keyboard"]
             pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
-            buttons = [category for category in categories]
+            buttons = [unpack_in_category_model(category) for category in categories]
 
             await state.set_state(ShowIncomesCategoryState.show_category)
             await state.update_data(
@@ -248,7 +250,6 @@ async def yes_delete_card(callback: CallbackQuery, state: FSMContext):
 async def upd_category_name(callback: CallbackQuery, state: FSMContext):
     category_id = int(callback.data[14:])
     await state.update_data(
-        category_type=IncomeCategory,
         category_id=category_id
     )
     await state.set_state(UpdCategoryState.upd_in_category_name)
@@ -293,8 +294,8 @@ async def get_incomes(callback: CallbackQuery, state: FSMContext):
     if incomes:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(incomes) // keyboard_limit + (len(incomes) % keyboard_limit != 0)
-        buttons = [income for income in incomes]
-        buttons.sort(key=lambda x: x.date, reverse=True)
+        buttons = [unpack_income_model(income) for income in incomes]
+        buttons.sort(key=lambda x: datetime.strptime(x["date"], '%Y-%m-%d').date(), reverse=True)
 
         await state.set_state(ShowIncomesState.show_incomes)
         await state.update_data(

@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from src.transactions.lexicon import LEXICON as TRANSACTIONS_LEXICON
-from src.database.models import Card, Income, Expense
+from src.database.models import Card
 
 
 def create_exit_transaction_edit_keyboard() -> InlineKeyboardMarkup:
@@ -14,12 +14,12 @@ def create_exit_transaction_edit_keyboard() -> InlineKeyboardMarkup:
     return keyboard
 
 
-def create_incomes_keyboard(incomes: list[Income]) -> InlineKeyboardMarkup:
+def create_incomes_keyboard(incomes: list[dict]) -> InlineKeyboardMarkup:
     buttons = list()
     for income in incomes:
         cur_income = InlineKeyboardButton(
-            text=f"Дата: {income.date}, Сумма: {income.amount}",
-            callback_data=f"get_income{income.id}"
+            text=f"Дата: {income['date']}, Сумма: {income['amount']}",
+            callback_data=f"get_income{income['id']}"
         )
         buttons.append([cur_income])
 
@@ -41,12 +41,12 @@ def create_incomes_keyboard(incomes: list[Income]) -> InlineKeyboardMarkup:
     return keyboard
 
 
-def create_expenses_keyboard(expenses: list[Expense]) -> InlineKeyboardMarkup:
+def create_expenses_keyboard(expenses: list[dict]) -> InlineKeyboardMarkup:
     buttons = list()
     for expense in expenses:
         cur_expense = InlineKeyboardButton(
-            text=f"Дата: {expense.date}, Сумма: {expense.amount}",
-            callback_data=f"get_expense{expense.id}"
+            text=f"Дата: {expense['date']}, Сумма: {expense['amount']}",
+            callback_data=f"get_expense{expense['id']}"
         )
         buttons.append([cur_expense])
 
@@ -170,12 +170,12 @@ def create_transaction_edit_keyboard(transaction_type: str) -> InlineKeyboardMar
     return keyboard
 
 
-def create_select_category_keyboard(categories: list, edit=False) -> InlineKeyboardMarkup:
+def create_select_category_keyboard(categories: list[dict], edit=False) -> InlineKeyboardMarkup:
     buttons = list()
     for category in categories:
-        callback_data = f"select_card{category.id}" if not edit else f"set_category{category.id}"
+        callback_data = f"select_card{category['id']}" if not edit else f"set_category{category['id']}"
         cur_category = InlineKeyboardButton(
-            text=category.name,
+            text=category["name"],
             callback_data=callback_data
         )
         buttons.append([cur_category])

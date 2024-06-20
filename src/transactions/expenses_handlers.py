@@ -12,7 +12,8 @@ from src.card_operations.keyboards import create_cards_keyboard, create_exit_key
     create_add_new_card_keyboard
 from src.database.database import async_session
 from src.database.models import Expense, ExpenseCategory, Card
-from src.services.services import pagination, isValidDate, isValidDescription
+from src.services.services import pagination, isValidDate, isValidDescription, unpack_expense_model, \
+    unpack_card_model, unpack_ex_category_model
 from src.services.settings import LIMITS
 from src.services.states import AddExpenseState, ShowExpensesState
 from src.transactions.categories_keyboards import create_add_new_ex_category_keyboard
@@ -35,8 +36,8 @@ async def get_expenses(message: Message, state: FSMContext):
     if expenses:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(expenses) // keyboard_limit + (len(expenses) % keyboard_limit != 0)
-        buttons = [expense for expense in expenses]
-        buttons.sort(key=lambda x: x.date, reverse=True)
+        buttons = [unpack_expense_model(expense) for expense in expenses]
+        buttons.sort(key=lambda x: datetime.strptime(x["date"], '%Y-%m-%d').date(), reverse=True)
 
         await state.set_state(ShowExpensesState.show_expenses)
         await state.update_data(
@@ -64,13 +65,19 @@ async def get_expenses(message: Message, state: FSMContext):
 @router.callback_query(F.data == "show_expenses_list", StateFilter(ShowExpensesState.show_expenses))
 async def get_expenses(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    expenses = data["expenses"]
+    try:
+        expenses = data["expenses"]
+    except KeyError:
+        async with async_session() as session:
+            query = select(Expense).where(Expense.tg_id == callback.from_user.id)
+            result = await session.execute(query)
+            expenses = result.scalars().all()
 
     if expenses:
         keyboard_limit = LIMITS["max_elements_in_keyboard"]
         pages = len(expenses) // keyboard_limit + (len(expenses) % keyboard_limit != 0)
-        buttons = [expense for expense in expenses]
-        buttons.sort(key=lambda x: x.date, reverse=True)
+        buttons = [unpack_expense_model(expense) for expense in expenses]
+        buttons.sort(key=lambda x: datetime.strptime(x["date"], '%Y-%m-%d').date(), reverse=True)
 
         await state.set_state(ShowExpensesState.show_expenses)
         await state.update_data(
@@ -149,9 +156,9 @@ async def get_expense_info(callback: CallbackQuery, state: FSMContext):
 
     description = expense.description if expense.description else TRANSACTIONS_LEXICON["expense_info"]["no_description"]
     await state.update_data(
-        expense=expense,
-        card=card,
-        expense_category=expense_category
+        expense=unpack_expense_model(expense),
+        card=unpack_card_model(card),
+        expense_category=unpack_ex_category_model(expense_category)
     )
     await callback.message.edit_text(
         text=print_expense_info(expense, card, expense_category, description),
@@ -168,14 +175,13 @@ async def add_expense(message: Message, state: FSMContext):
         if categories:
             keyboard_limit = LIMITS["max_elements_in_keyboard"]
             pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
-            buttons = [category for category in categories]
+            buttons = [unpack_ex_category_model(category) for category in categories]
 
             await state.set_state(AddExpenseState.select_category)
             await state.update_data(
                 page=0,
                 pages=pages,
                 ex_categories=buttons,
-                category_type=Expense,
                 category_type_str="expense"
             )
 
@@ -201,14 +207,13 @@ async def add_expense(callback: CallbackQuery, state: FSMContext):
         if categories:
             keyboard_limit = LIMITS["max_elements_ex_keyboard"]
             pages = len(categories) // keyboard_limit + (len(categories) % keyboard_limit != 0)
-            buttons = [category for category in categories]
+            buttons = [unpack_ex_category_model(category) for category in categories]
 
             await state.set_state(AddExpenseState.select_category)
             await state.update_data(
                 page=0,
                 pages=pages,
                 ex_categories=buttons,
-                category_type=Expense,
                 category_type_str="expense"
             )
 
@@ -453,7 +458,7 @@ async def change_expense_category(callback: CallbackQuery, state: FSMContext):
         result = await session.execute(query)
         categories = result.scalars().all()
 
-    buttons = [category for category in categories]
+    buttons = [unpack_ex_category_model(category) for category in categories]
 
     await state.set_state(ShowExpensesState.set_new_category)
     await callback.message.edit_text(
@@ -466,7 +471,7 @@ async def change_expense_category(callback: CallbackQuery, state: FSMContext):
 async def set_new_category(callback: CallbackQuery, state: FSMContext):
     category_id = int(callback.data[12:])
     data = await state.get_data()
-    expense_id = data["expense"].id
+    expense_id = data["expense"]["id"]
     async with (async_session() as session):
         stmt = update(Expense).where(Expense.id == expense_id).values(category_id=category_id)
         await session.execute(stmt)
@@ -474,7 +479,10 @@ async def set_new_category(callback: CallbackQuery, state: FSMContext):
 
     await callback.message.delete()
     await state.set_state(ShowExpensesState.show_expenses)
-    await callback.message.answer(TRANSACTIONS_LEXICON["edit_expense"]["category_is_update"])
+    await callback.message.answer(
+        text=TRANSACTIONS_LEXICON["edit_expense"]["category_is_update"],
+        reply_markup=create_expense_is_create_keyboard(expense_id)
+    )
 
 
 @router.callback_query(F.data == "edit_ex_card", StateFilter(ShowExpensesState.show_expenses))
@@ -499,16 +507,16 @@ async def set_new_card(callback: CallbackQuery, state: FSMContext):
     expense = data["expense"]
 
     async with (async_session() as session):
-        query = select(Card).where(Card.id == expense.card_id)
+        query = select(Card).where(Card.id == expense["card_id"])
         result = await session.execute(query)
         card = result.scalars().first()
 
-        new_balance = card.balance + expense.amount
+        new_balance = card.balance + expense["amount"]
         stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
         await session.execute(stmt)
         await session.commit()
 
-        stmt = update(Expense).where(Expense.id == expense.id).values(card_id=card_id)
+        stmt = update(Expense).where(Expense.id == expense["id"]).values(card_id=card_id)
         await session.execute(stmt)
         await session.commit()
 
@@ -516,14 +524,17 @@ async def set_new_card(callback: CallbackQuery, state: FSMContext):
         result = await session.execute(query)
         card = result.scalars().first()
 
-        new_balance = card.balance - expense.amount
+        new_balance = card.balance - expense["amount"]
         stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
         await session.execute(stmt)
         await session.commit()
 
     await callback.message.delete()
     await state.set_state(ShowExpensesState.show_expenses)
-    await callback.message.answer(TRANSACTIONS_LEXICON["edit_expense"]["card_is_update"])
+    await callback.message.answer(
+        text=TRANSACTIONS_LEXICON["edit_expense"]["card_is_update"],
+        reply_markup=create_expense_is_create_keyboard(expense["id"])
+    )
 
 
 @router.callback_query(F.data == "edit_ex_amount", StateFilter(ShowExpensesState.show_expenses))
@@ -545,21 +556,23 @@ async def set_new_expense_amount(message: Message, state: FSMContext):
             expense = data["expense"]
             card = data["card"]
 
-            d = amount - expense.amount
-            new_balance = card.balance - d
-            card.balance = new_balance
+            d = amount - expense["amount"]
+            new_balance = card["balance"] - d
+            card["balance"] = new_balance
             async with (async_session() as session):
-                stmt = update(Expense).where(Expense.id == expense.id).values(amount=amount)
+                stmt = update(Expense).where(Expense.id == expense["id"]).values(amount=amount)
                 await session.execute(stmt)
                 await session.commit()
 
-                stmt = update(Card).where(Card.id == card.id).values(balance=new_balance)
+                stmt = update(Card).where(Card.id == card["id"]).values(balance=new_balance)
                 await session.execute(stmt)
                 await session.commit()
 
             await state.set_state(ShowExpensesState.show_expenses)
-            await message.answer(TRANSACTIONS_LEXICON["edit_expense"]["amount_is_update"])
-
+            await message.answer(
+                text=TRANSACTIONS_LEXICON["edit_expense"]["amount_is_update"],
+                reply_markup=create_expense_is_create_keyboard(expense["id"])
+            )
         else:
             await message.answer(
                 text=TRANSACTIONS_LEXICON["expense_transactions"]["incorrect_amount"],
@@ -590,12 +603,15 @@ async def set_new_expense_date(message: Message, state: FSMContext):
         data = await state.get_data()
         expense = data["expense"]
         async with async_session() as session:
-            stmt = update(Expense).where(Expense.id == expense.id).values(date=date)
+            stmt = update(Expense).where(Expense.id == expense["id"]).values(date=date)
             await session.execute(stmt)
             await session.commit()
 
         await state.set_state(ShowExpensesState.show_expenses)
-        await message.answer(TRANSACTIONS_LEXICON["edit_expense"]["date_is_update"])
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["edit_expense"]["date_is_update"],
+            reply_markup=create_expense_is_create_keyboard(expense["id"])
+        )
 
     else:
         await message.answer(
@@ -620,12 +636,15 @@ async def set_new_expense_description(message: Message, state: FSMContext):
         data = await state.get_data()
         expense = data["expense"]
         async with async_session() as session:
-            stmt = update(Expense).where(Expense.id == expense.id).values(description=description)
+            stmt = update(Expense).where(Expense.id == expense["id"]).values(description=description)
             await session.execute(stmt)
             await session.commit()
 
         await state.set_state(ShowExpensesState.show_expenses)
-        await message.answer(TRANSACTIONS_LEXICON["edit_expense"]["description_is_update"])
+        await message.answer(
+            text=TRANSACTIONS_LEXICON["edit_expense"]["description_is_update"],
+            reply_markup=create_expense_is_create_keyboard(expense["id"])
+        )
 
     else:
         await message.answer(
@@ -661,12 +680,12 @@ async def yes_delete_card(callback: CallbackQuery, state: FSMContext):
     expense = data["expense"]
 
     async with async_session() as session:
-        to_delete_expense = delete(Expense).where(Expense.id == expense.id)
+        to_delete_expense = delete(Expense).where(Expense.id == expense["id"])
         await session.execute(to_delete_expense)
         await session.commit()
 
-        amount = expense.amount
-        stmt = select(Card).where(Card.id == expense.card_id)
+        amount = expense["amount"]
+        stmt = select(Card).where(Card.id == expense["card_id"])
         result = await session.execute(stmt)
         card = result.scalars().first()
         new_balance = card.balance + amount
