@@ -11,7 +11,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    tg_id: Mapped[int] = mapped_column(nullable=False)
+    tg_id: Mapped[int] = mapped_column(nullable=False, unique=True)
     first_name: Mapped[str] = mapped_column()
     email: Mapped[str] = mapped_column(nullable=True)
 

@@ -5,5 +5,8 @@ alembic
 sqlalchemy
 aiosqlite
 pydantic
+pydantic-settings
 redis
 aioredis
+asyncpg
+psycopg

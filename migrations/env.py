@@ -23,7 +23,7 @@ from alembic import context
 from config_data.config import Config, load_config
 
 database_config: Config = load_config(".env")
-DATABASE_URL = database_config.database.url
+DATABASE_URL = database_config.database.DATABASE_URL
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
